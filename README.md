@@ -45,7 +45,7 @@ PillMind/
 ├── public/                # Static assets
 │   ├── images/           # Image assets
 │   └── robots.txt        # Robots.txt file
-├── next-sitemap.config.js # Sitemap configuration
+
 └── package.json           # Dependencies and scripts
 ```
 
@@ -123,7 +123,7 @@ SITE_URL=https://pillmind.app
 ```
 
 ### Sitemap
-The project includes automatic sitemap generation using `next-sitemap`. The sitemap is generated automatically after each build.
+The project includes automatic sitemap generation using Next.js built-in sitemap generation. The sitemap is automatically available at `/sitemap.xml`.
 
 ### Analytics
 Google Analytics 4 integration is included with custom event tracking for:
