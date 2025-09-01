@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { motion } from "framer-motion"
 
 export default function PillMindLanding() {
@@ -44,14 +43,14 @@ function Header() {
             whileTap={{ scale: 0.95 }}
           >
             <Logo />
-            <span className="text-xl font-semibold">PillMind</span>
+            <span className="text-xl font-semibold text-[#0EA8BC]">PillMind</span>
           </motion.a>
           <nav className="hidden md:flex items-center gap-8 text-sm text-[#334155]">
             {[
-              { href: "#how", text: "Як це працює" },
-              { href: "#features", text: "Функції" },
-              { href: "#security", text: "Безпека" },
-              { href: "#pricing", text: "Плани" },
+              { href: "#how", text: "How it works" },
+              { href: "#features", text: "Features" },
+              { href: "#security", text: "Security" },
+              { href: "#pricing", text: "Pricing" },
               { href: "#faq", text: "FAQ" },
             ].map((item, index) => (
               <motion.a
@@ -74,7 +73,7 @@ function Header() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Як це працює
+              How it works
             </motion.a>
             <motion.a
               href="#cta"
@@ -82,7 +81,7 @@ function Header() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Спробувати демо
+              Try the demo
             </motion.a>
           </div>
         </div>
@@ -106,7 +105,7 @@ function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.8 }}
             >
-              Приймати ліки стало простіше
+              Taking your meds just got easier
             </motion.h1>
             <motion.p
               className="mt-4 text-lg/relaxed text-white/90 text-pretty"
@@ -114,8 +113,8 @@ function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.8 }}
             >
-              PillMind нагадує про прийом, аналізує ваші дані та підказує безпечні комбінації. З вашим дозволом — і лише
-              для вас.
+              PillMind reminds you to take meds, analyzes your data, and suggests safe combinations. With your consent —
+              and for you only.
             </motion.p>
             <motion.div
               className="mt-8 flex flex-col sm:flex-row gap-3"
@@ -129,7 +128,7 @@ function Hero() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Спробувати демо
+                Try the demo
               </motion.a>
               <motion.a
                 href="#how"
@@ -137,7 +136,7 @@ function Hero() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                Дізнатись більше
+                Learn more
               </motion.a>
             </motion.div>
             <motion.ul
@@ -147,9 +146,9 @@ function Hero() {
               transition={{ delay: 0.8, duration: 0.8 }}
             >
               {[
-                { text: "Нагадування", delay: 0 },
-                { text: "Перевірка взаємодій", delay: 0.1 },
-                { text: "AI‑поради*", delay: 0.2 },
+                { text: "Reminders", delay: 0 },
+                { text: "Interaction check", delay: 0.1 },
+                { text: "AI-recommendations*", delay: 0.2 },
               ].map((item, index) => (
                 <motion.li
                   key={item.text}
@@ -168,7 +167,7 @@ function Hero() {
               animate={{ opacity: 1 }}
               transition={{ delay: 1.2, duration: 0.8 }}
             >
-              *Поради не замінюють консультацію лікаря
+              *Recommendations do not replace a doctor’s consultation.
             </motion.p>
           </motion.div>
           <motion.div
@@ -184,14 +183,14 @@ function Hero() {
             >
               <div className="h-full rounded-[20px] border border-[#E2E8F0] bg-gradient-to-b from-[#F8FAFC] to-white p-5">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-[#334155]">Мої ліки</span>
-                  <span className="text-xs text-[#64748B]">Сьогодні</span>
+                  <span className="text-sm font-semibold text-[#334155]">My meds</span>
+                  <span className="text-xs text-[#64748B]">Today</span>
                 </div>
                 <div className="mt-4 space-y-3">
                   {[
-                    { name: "Вітамін D3", time: "09:00", dose: "2000 IU" },
-                    { name: "Магній", time: "13:00", dose: "200 mg" },
-                    { name: "Рецептний", time: "21:00", dose: "1 таблетка" },
+                    { name: "Vitamin D3", time: "09:00", dose: "2000 IU" },
+                    { name: "Magnesium", time: "13:00", dose: "200 mg" },
+                    { name: "Prescription", time: "21:00", dose: "1 tablet" },
                   ].map((item, idx) => (
                     <motion.div
                       key={idx}
@@ -218,7 +217,7 @@ function Hero() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1.2, duration: 0.5 }}
                 >
-                  <p className="text-sm font-semibold text-[#0F172A]">Аналітика</p>
+                  <p className="text-sm font-semibold text-[#0F172A]">Analytics</p>
                   <div className="mt-2 h-24 w-full rounded-md bg-gradient-to-r from-[#12B5C9]/20 via-[#2ED3B7]/20 to-[#3EC7E6]/20" />
                 </motion.div>
               </div>
@@ -242,7 +241,7 @@ function Trust() {
     >
       <Container>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center text-sm text-[#64748B]">
-          {["GDPR Ready", "Шифрування", "Контроль доступу", "Не замінює лікаря"].map((text, index) => (
+          {["GDPR Ready", "Encryption", "Access control", "Does not replace a doctor"].map((text, index) => (
             <motion.div
               key={text}
               className="flex items-center justify-center gap-2"
@@ -264,16 +263,16 @@ function Trust() {
 function HowItWorks() {
   const steps = [
     {
-      title: "Додайте ліки",
-      text: "Вручну або через AI‑агента. Вкажіть дозування та графік.",
+      title: "Add your meds",
+      text: "Manually or via the AI agent. Set dosage and schedule.",
     },
     {
-      title: "Отримуйте нагадування",
-      text: "Push‑сповіщення вчасно. Пропуски — під контролем.",
+      title: "Get reminders",
+      text: "On-time push notifications. Missed doses under control.",
     },
     {
-      title: "Дійте впевнено",
-      text: "Перевірка взаємодій і персональні поради для режиму.",
+      title: "Act with confidence",
+      text: "Interaction checks and personal regimen tips.",
     },
   ]
 
@@ -288,9 +287,9 @@ function HowItWorks() {
     >
       <Container>
         <HeaderBlock
-          eyebrow="Як це працює"
-          title="Три прості кроки"
-          subtitle="Все, що потрібно для дисципліни та спокою."
+          eyebrow="How it works"
+          title="Three simple steps"
+          subtitle="Everything you need for discipline and peace of mind."
         />
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
           {steps.map((step, index) => (
@@ -322,20 +321,20 @@ function HowItWorks() {
 function Features() {
   const list = [
     {
-      title: "Персональні нагадування",
-      text: "Гнучкі графіки, часові пояси, пропуски та повторні нагадування.",
+      title: "Personal reminders",
+      text: "Flexible schedules, time zones, missed dose handling and repeats.",
     },
     {
-      title: "Перевірка взаємодій",
-      text: "Попередження про небажані поєднання ліків і вітамінів.",
+      title: "Interaction checks",
+      text: "Warnings about unwanted combinations of meds and vitamins.",
     },
     {
-      title: "AI‑поради",
-      text: "Рекомендації на основі ваших даних і режиму.*",
+      title: "AI recommendations",
+      text: "Suggestions based on your data and regimen.*",
     },
     {
-      title: "Аналітика та звіти",
-      text: "Статистика прийому, експорт PDF/CSV для лікаря.",
+      title: "Analytics & reports",
+      text: "Adherence stats, PDF/CSV export for your doctor.",
     },
   ]
 
@@ -349,7 +348,7 @@ function Features() {
       viewport={{ once: true }}
     >
       <Container>
-        <HeaderBlock eyebrow="Можливості" title="Все для контролю прийому" subtitle="І розуміння власного стану." />
+        <HeaderBlock eyebrow="Features" title="Everything for medication control" subtitle="And understanding your state." />
         <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
           {list.map((feature, index) => (
             <motion.div
@@ -376,7 +375,7 @@ function Features() {
           transition={{ delay: 0.5, duration: 0.6 }}
           viewport={{ once: true }}
         >
-          *Поради не замінюють консультацію лікаря
+          *Recommendations do not replace a doctor’s consultation.
         </motion.p>
       </Container>
     </motion.section>
@@ -385,10 +384,10 @@ function Features() {
 
 function Security() {
   const points = [
-    "Шифрування даних у спокої та під час передачі",
-    "Контроль доступу та прозорі дозволи",
-    "GDPR‑сумісність та локалізоване зберігання",
-    "Експорт і видалення даних за запитом користувача",
+    "Data encryption at rest and in transit",
+    "Access control & transparent permissions",
+    "GDPR compliance and localized storage",
+    "Export and delete data on user request",
   ]
 
   return (
@@ -402,9 +401,9 @@ function Security() {
     >
       <Container>
         <HeaderBlock
-          eyebrow="Безпека"
-          title="Ваші дані — тільки ваші"
-          subtitle="Ми будуємо довіру технологіями та політиками."
+          eyebrow="Security"
+          title="Your data is yours alone"
+          subtitle="We build trust with technology and policy."
         />
         <div className="mt-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
           <motion.div
@@ -416,7 +415,7 @@ function Security() {
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <div className="flex items-center gap-3 text-[#0EA8BC] font-semibold">
-              <Shield /> Захист за замовчуванням
+              <Shield /> Protection by default
             </div>
             <ul className="mt-4 space-y-2 text-sm text-[#334155] list-disc pl-5">
               {points.map((point, index) => (
@@ -441,8 +440,8 @@ function Security() {
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
           >
             <p className="text-sm text-[#64748B]">
-              PillMind не надає медичних діагнозів і не замінює консультацію лікаря. Для змін у схемі лікування
-              звертайтесь до фахівця.
+              PillMind does not provide medical diagnoses and does not replace a doctor’s consultation. Always consult a
+              professional before changing your treatment plan.
             </p>
             <div className="mt-4 h-36 w-full rounded-md bg-gradient-to-r from-[#12B5C9]/15 via-[#2ED3B7]/15 to-[#3EC7E6]/15" />
           </motion.div>
@@ -457,22 +456,22 @@ function Pricing() {
     {
       name: "Free",
       price: "0 ₴",
-      features: ["Трекінг прийому", "Нагадування", "До 5 позицій"],
-      cta: "Почати безкоштовно",
+      features: ["Medication tracking", "Reminders", "Up to 5 items"],
+      cta: "Start free",
       highlighted: false,
     },
     {
       name: "Plus",
-      price: "149 ₴/міс",
-      features: ["Перевірка взаємодій", "Базова аналітика", "Необмежено позицій"],
-      cta: "Обрати Plus",
+      price: "149 ₴/mo",
+      features: ["Interaction checks", "Basic analytics", "Unlimited items"],
+      cta: "Choose Plus",
       highlighted: true,
     },
     {
       name: "Pro",
-      price: "249 ₴/міс",
-      features: ["Розширена аналітика", "Експорт для лікаря", "Сімейний доступ"],
-      cta: "Обрати Pro",
+      price: "249 ₴/mo",
+      features: ["Advanced analytics", "Doctor export", "Family access"],
+      cta: "Choose Pro",
       highlighted: false,
     },
   ]
@@ -488,9 +487,9 @@ function Pricing() {
     >
       <Container>
         <HeaderBlock
-          eyebrow="Плани"
-          title="Гнучко під ваші потреби"
-          subtitle="Почніть безкоштовно, оновіть коли знадобиться."
+          eyebrow="Pricing"
+          title="Flexible for your needs"
+          subtitle="Start free, upgrade when you need."
         />
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
           {tiers.map((tier, index) => (
@@ -537,9 +536,9 @@ function Pricing() {
 
 function Testimonials() {
   const items = [
-    { quote: "Я нарешті не плутаюсь із прийомом — і це спокій.", name: "Олена, 42" },
-    { quote: "Зручно бачити статистику і ділитися з лікарем.", name: "Ігор, 55" },
-    { quote: "Нагадування працюють ідеально навіть у подорожах.", name: "Марина, 34" },
+    { quote: "I finally stopped mixing up doses — and that’s peace of mind.", name: "Olena, 42" },
+    { quote: "It’s convenient to see stats and share them with my doctor.", name: "Ihor, 55" },
+    { quote: "Reminders work perfectly even when I travel.", name: "Maryna, 34" },
   ]
 
   return (
@@ -551,11 +550,11 @@ function Testimonials() {
       viewport={{ once: true }}
     >
       <Container>
-        <HeaderBlock eyebrow="Відгуки" title="Користувачі про PillMind" subtitle="Ми цінуємо досвід кожного." />
+        <HeaderBlock eyebrow="Testimonials" title="What users say about PillMind" subtitle="We value every experience." />
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {items.map((testimonial, index) => (
+          {items.map((t, index) => (
             <motion.figure
-              key={testimonial.name}
+              key={t.name}
               className="rounded-[16px] border border-[#E2E8F0] bg-white p-6 shadow-card"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -563,8 +562,8 @@ function Testimonials() {
               viewport={{ once: true }}
               whileHover={{ y: -5, transition: { duration: 0.2 } }}
             >
-              <blockquote className="text-[#0F172A]">"{testimonial.quote}"</blockquote>
-              <figcaption className="mt-4 text-sm text-[#64748B]">{testimonial.name}</figcaption>
+              <blockquote className="text-[#0F172A]">"{t.quote}"</blockquote>
+              <figcaption className="mt-4 text-sm text-[#64748B]">{t.name}</figcaption>
             </motion.figure>
           ))}
         </div>
@@ -576,16 +575,16 @@ function Testimonials() {
 function FAQ() {
   const qas = [
     {
-      q: "Чи зберігаєте рецепти?",
-      a: "Ні, ми зберігаємо лише дані, які ви додаєте свідомо. Експорт/видалення можливі у будь-який момент.",
+      q: "Do you store prescriptions?",
+      a: "No, we only store data you intentionally add. You can export/delete anytime.",
     },
     {
-      q: "Як працює AI?",
-      a: "Аналізує ваші дані та режим прийому, підказує типові дозування й перевіряє взаємодії. Не є медичним діагнозом.",
+      q: "How does the AI work?",
+      a: "It analyzes your data and regimen, suggests typical dosages and checks interactions. It is not a medical diagnosis.",
     },
     {
-      q: "Чи потрібен інтернет?",
-      a: "Базові нагадування працюють офлайн; синхронізація та аналітика потребують підключення.",
+      q: "Do I need internet access?",
+      a: "Basic reminders work offline; sync and analytics require a connection.",
     },
   ]
 
@@ -599,7 +598,7 @@ function FAQ() {
       viewport={{ once: true }}
     >
       <Container>
-        <HeaderBlock eyebrow="FAQ" title="Поширені запитання" subtitle="Якщо чогось не вистачає — напишіть нам." />
+        <HeaderBlock eyebrow="FAQ" title="Frequently asked questions" subtitle="If something’s missing — contact us." />
         <div className="mt-8 divide-y divide-[#E2E8F0] rounded-[16px] border border-[#E2E8F0] bg-white">
           {qas.map((item, index) => (
             <motion.details
@@ -641,9 +640,9 @@ function CTA() {
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
         >
-          <h2 className="text-3xl font-bold text-balance">Готові спробувати PillMind?</h2>
+          <h2 className="text-3xl font-bold text-balance">Ready to try PillMind?</h2>
           <p className="mt-2 max-w-2xl text-white/90 text-pretty">
-            Спробуйте демо‑версію та відчуйте спокій від контролю над прийомом ліків і вітамінів.
+            Try the demo and feel the peace of mind that comes with staying on top of your meds and vitamins.
           </p>
           <motion.a
             href="#"
@@ -651,7 +650,7 @@ function CTA() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Спробувати демо
+            Try the demo
           </motion.a>
         </motion.div>
       </Container>
@@ -681,7 +680,7 @@ function Footer() {
               <Logo />
               <span className="text-lg font-semibold">PillMind</span>
             </div>
-            <p className="mt-3 text-sm text-[#64748B]">Пам'ятаємо про ліки — дбаємо про життя.</p>
+            <p className="mt-3 text-sm text-[#64748B]">We remember your meds — so you can focus on life.</p>
           </motion.div>
           <motion.nav
             className="text-sm text-[#334155]"
@@ -690,12 +689,12 @@ function Footer() {
             transition={{ delay: 0.1, duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <p className="font-semibold">Меню</p>
+            <p className="font-semibold">Menu</p>
             <ul className="mt-2 space-y-1">
               {[
-                { href: "#features", text: "Функції" },
-                { href: "#security", text: "Безпека" },
-                { href: "#pricing", text: "Плани" },
+                { href: "#features", text: "Features" },
+                { href: "#security", text: "Security" },
+                { href: "#pricing", text: "Pricing" },
                 { href: "#faq", text: "FAQ" },
               ].map((item) => (
                 <li key={item.href}>
@@ -713,7 +712,7 @@ function Footer() {
             transition={{ delay: 0.2, duration: 0.6 }}
             viewport={{ once: true }}
           >
-            <p className="font-semibold">Контакти</p>
+            <p className="font-semibold">Contacts</p>
             <ul className="mt-2 space-y-1">
               <li>support@pillmind.app</li>
               <li>© PillMind</li>

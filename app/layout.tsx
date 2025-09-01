@@ -16,16 +16,15 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "PillMind - Приймати ліки стало простіше",
+  title: "PillMind - Taking medicine has become easier",
   description:
-    "PillMind нагадує про прийом, аналізує ваші дані та підказує безпечні комбінації. З вашим дозволом — і лише для вас.",
-  keywords: "ліки, нагадування, здоров'я, медицина, додаток",
+    "PillMind reminds you about your intake, analyzes your data, and suggests safe combinations. With your permission — and only for you.",
+  keywords: "medicine, reminders, health, medicine, app",
   openGraph: {
-    title: "PillMind - Приймати ліки стало простіше",
-    description: "PillMind нагадує про прийом, аналізує ваші дані та підказує безпечні комбінації.",
+    title: "PillMind - Taking medicine has become easier",
+    description: "PillMind reminds you about your intake, analyzes your data, and suggests safe combinations.",
     type: "website",
   },
-    generator: 'v0.app'
 }
 
 export default function RootLayout({
