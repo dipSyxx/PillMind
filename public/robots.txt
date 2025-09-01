@@ -1,0 +1,12 @@
+# *
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /private/
+Disallow: /api/
+
+# Host
+Host: https://v0-pill-mind-landing-page.vercel.app
+
+# Sitemaps
+Sitemap: https://v0-pill-mind-landing-page.vercel.app/sitemap.xml

@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
+import { defaultMetadata } from "@/lib/seo"
 
 const inter = Inter({
   subsets: ["latin", "cyrillic"],
@@ -15,17 +16,7 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
 })
 
-export const metadata: Metadata = {
-  title: "PillMind - Taking medicine has become easier",
-  description:
-    "PillMind reminds you about your intake, analyzes your data, and suggests safe combinations. With your permission — and only for you.",
-  keywords: "medicine, reminders, health, medicine, app",
-  openGraph: {
-    title: "PillMind - Taking medicine has become easier",
-    description: "PillMind reminds you about your intake, analyzes your data, and suggests safe combinations.",
-    type: "website",
-  },
-}
+export const metadata: Metadata = defaultMetadata
 
 export default function RootLayout({
   children,
@@ -33,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="uk" className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
       <body className="font-sans">{children}</body>
     </html>
   )

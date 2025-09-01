@@ -1,30 +1,211 @@
-# PillMind landing page
+# PillMind - Medication Reminder App
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+A modern, user-friendly medication reminder application built with Next.js, TypeScript, and Tailwind CSS.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/dipsyxxs-projects/v0-pill-mind-landing-page)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/QnAeC1nVO62)
+## 🏗️ Project Structure
 
-## Overview
+```
+PillMind/
+├── app/
+│   ├── layout.tsx          # Root layout with SEO metadata
+│   ├── page.tsx            # Main landing page (Hero + sections)
+│   └── sitemap.ts         # Next.js sitemap generation
+├── components/
+│   ├── ui/                 # shadcn/ui components
+│   │   └── button.tsx     # Customized button with PillMind colors
+│   ├── sections/           # Page sections
+│   │   ├── hero.tsx       # Hero section
+│   │   ├── features.tsx   # Features section
+│   │   ├── how-it-works.tsx # How it works section
+│   │   ├── pricing.tsx    # Pricing section
+│   │   ├── faq.tsx        # FAQ section
+│   │   ├── security.tsx   # Security section
+│   │   ├── testimonials.tsx # Testimonials section
+│   │   ├── trust.tsx      # Trust indicators section
+│   │   └── index.ts       # Section exports
+│   ├── shared/             # Shared components
+│   │   ├── header.tsx     # Site header
+│   │   ├── footer.tsx     # Site footer
+│   │   ├── cta.tsx        # Call-to-action component
+│   │   ├── container.tsx  # Layout container
+│   │   ├── header-block.tsx # Section header component
+│   │   ├── logo.tsx       # Logo component
+│   │   ├── icons.tsx      # Icon components
+│   │   └── index.ts       # Shared component exports
+│   └── theme-provider.tsx # Theme provider
+├── content/                # MDX content files
+│   ├── faq.mdx           # FAQ content
+│   └── terms.mdx         # Terms of service
+├── lib/                   # Utility libraries
+│   ├── seo.ts            # SEO utilities and metadata
+│   ├── analytics.ts      # Analytics configuration
+│   └── utils.ts          # General utilities
+├── styles/                # Global styles
+│   └── globals.css       # Global CSS with PillMind color palette
+├── public/                # Static assets
+│   ├── images/           # Image assets
+│   └── robots.txt        # Robots.txt file
+├── next-sitemap.config.js # Sitemap configuration
+└── package.json           # Dependencies and scripts
+```
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## 🎨 Design System
 
-## Deployment
+### Color Palette
+- **Primary**: `#0EA8BC` (Teal)
+- **Secondary**: `#12B5C9` (Light Teal)
+- **Accent**: `#2ED3B7` (Mint)
+- **Background**: `#F1F5F9` (Light Gray)
+- **Text**: `#0F172A` (Dark Blue)
 
-Your project is live at:
+### Typography
+- **Primary Font**: Inter (Latin + Cyrillic support)
+- **Monospace Font**: JetBrains Mono
+- **Base Size**: 16px
+- **Line Height**: 1.5
 
-**[https://vercel.com/dipsyxxs-projects/v0-pill-mind-landing-page](https://vercel.com/dipsyxxs-projects/v0-pill-mind-landing-page)**
+### Components
+- **Buttons**: Custom variants with PillMind colors
+- **Cards**: Rounded corners (16px) with subtle shadows
+- **Containers**: Max-width 1200px with responsive padding
 
-## Build your app
+## 🚀 Getting Started
 
-Continue building your app on:
+### Prerequisites
+- Node.js 18+ 
+- pnpm (recommended) or npm
 
-**[https://v0.app/chat/projects/QnAeC1nVO62](https://v0.app/chat/projects/QnAeC1nVO62)**
+### Installation
+```bash
+# Clone the repository
+git clone <repository-url>
+cd PillMind
 
-## How It Works
+# Install dependencies
+pnpm install
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+# Start development server
+pnpm dev
+```
+
+### Build
+```bash
+# Build for production
+pnpm build
+
+# Start production server
+pnpm start
+```
+
+## 📱 Features
+
+### Core Functionality
+- **Medication Tracking**: Add and manage medications
+- **Smart Reminders**: Customizable notification system
+- **Interaction Checks**: Safety warnings for drug combinations
+- **Analytics**: Track adherence and generate reports
+- **Data Export**: PDF/CSV export for healthcare providers
+
+### Technical Features
+- **Responsive Design**: Mobile-first approach
+- **SEO Optimized**: Meta tags, sitemap, robots.txt
+- **Performance**: Optimized images and animations
+- **Accessibility**: ARIA labels and keyboard navigation
+- **Internationalization**: Ukrainian and English support
+
+## 🔧 Configuration
+
+### Environment Variables
+```bash
+# .env.local
+NEXT_PUBLIC_GA_MEASUREMENT_ID=your-ga-id
+SITE_URL=https://pillmind.app
+```
+
+### Sitemap
+The project includes automatic sitemap generation using `next-sitemap`. The sitemap is generated automatically after each build.
+
+### Analytics
+Google Analytics 4 integration is included with custom event tracking for:
+- Page views
+- Button clicks
+- Form submissions
+- Scroll depth
+- Downloads
+
+## 📁 Component Architecture
+
+### Sections
+Each section is a self-contained component with:
+- Framer Motion animations
+- Responsive design
+- Accessibility features
+- SEO-friendly markup
+
+### Shared Components
+Reusable components used across multiple sections:
+- **Container**: Consistent layout wrapper
+- **HeaderBlock**: Section title and subtitle
+- **Icons**: SVG icons with consistent styling
+
+## 🎭 Animations
+
+Built with Framer Motion for smooth, performant animations:
+- **Entrance**: Fade-in and slide-in effects
+- **Hover**: Scale and color transitions
+- **Scroll**: Viewport-based animations
+- **Stagger**: Sequential element animations
+
+## 🌐 SEO & Performance
+
+### SEO Features
+- Dynamic metadata generation
+- Open Graph tags
+- Twitter Card support
+- Structured data
+- Sitemap generation
+- Robots.txt configuration
+
+### Performance Optimizations
+- Image optimization
+- Font optimization
+- Code splitting
+- Lazy loading
+- Bundle analysis
+
+## 📚 Content Management
+
+### MDX Support
+Content is managed through MDX files in the `content/` directory:
+- **FAQ**: Frequently asked questions
+- **Terms**: Terms of service
+- **Localization**: Support for multiple languages
+
+## 🔒 Security
+
+### Data Protection
+- GDPR compliance
+- Data encryption
+- Access control
+- User consent management
+- Data export/deletion
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+## 🆘 Support
+
+For support, email support@pillmind.app or create an issue in the repository.
+
+---
+
+Built with ❤️ for better healthcare management
