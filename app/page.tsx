@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { Header, Footer, CTA } from "@/components/shared"
-import { Hero, Trust, HowItWorks, Features, Security, Pricing, Testimonials, FAQ } from "@/components/sections"
+import { Hero, Trust, HowItWorks, Features, Security, Pricing, FAQ } from "@/components/sections"
 import { Button } from "@/components/ui/button"
 
 export default function PillMindLanding() {
@@ -15,7 +15,6 @@ export default function PillMindLanding() {
       <Features />
       <Security />
       <Pricing />
-      <Testimonials />
       <FAQ />
       <CTA />
       <Footer />

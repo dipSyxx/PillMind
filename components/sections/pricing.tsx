@@ -10,21 +10,21 @@ export function Pricing() {
   const tiers = [
     {
       name: "Free",
-      price: "0 ₴",
+      price: "0 $",
       features: ["Medication tracking", "Reminders", "Up to 5 items"],
       cta: "Start free",
       highlighted: false,
     },
     {
       name: "Plus",
-      price: "149 ₴/mo",
+      price: "10 $/mo",
       features: ["Interaction checks", "Basic analytics", "Unlimited items"],
       cta: "Choose Plus",
       highlighted: true,
     },
     {
       name: "Pro",
-      price: "249 ₴/mo",
+      price: "25 $/mo",
       features: ["Advanced analytics", "Doctor export", "Family access"],
       cta: "Choose Pro",
       highlighted: false,
