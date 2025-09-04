@@ -2,7 +2,8 @@
 
 import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Check, Copy, XCircle, Download, Palette as PaletteIcon, Type as TypeIcon, Accessibility as A11yIcon, ExternalLink } from "lucide-react";
+import { Check, Copy, XCircle, Download, Palette as PaletteIcon, Type as TypeIcon, Accessibility as A11yIcon, ExternalLink, Book, MousePointer2 } from "lucide-react";
+import { Logo } from "@/components/shared";
 
 export default function BrandbookPage() {
   return (
@@ -50,8 +51,10 @@ function Header() {
       <Container>
         <div className="flex h-14 items-center justify-between">
           <a href="#top" className="flex items-center gap-2" aria-label="PillMind brandbook">
-            <BrandGlyph />
-            <span className="font-semibold">PillMind Brandbook</span>
+            
+            <BrandGlyph><Book color="white" className="w-5 h-5"/></BrandGlyph>
+
+            <span className="font-semibold text-[#0EA8BC]">PillMind Brandbook</span>
           </a>
           <nav className="hidden md:flex items-center gap-6 text-sm text-[#334155]">
             <a className="hover:text-[#0EA8BC]" href="#logo">Logo</a>
@@ -156,8 +159,8 @@ function LogoBlock() {
         <CardHeader title="Primary logo" subtitle="Full-color mark + wordmark" />
         <CardBody>
           <div className="flex items-center gap-3">
-            <BrandGlyph className="h-12 w-12" />
-            <span className="text-2xl font-semibold">PillMind</span>
+            <Logo/>
+            <span className="text-2xl font-semibold text-[#0EA8BC]">PillMind</span>
           </div>
         </CardBody>
       </Card>
@@ -204,13 +207,10 @@ function LogoBlock() {
   );
 }
 
-function BrandGlyph({ className = "h-8 w-8" }: { className?: string }) {
+function BrandGlyph({children, className = "h-8 w-8" }: {children: React.ReactNode, className?: string }) {
   return (
     <div className={`flex items-center justify-center rounded-[10px] bg-gradient-to-br from-[#12B5C9] via-[#2ED3B7] to-[#3EC7E6] ${className}`}>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
-        <path d="M5 4h6a5 5 0 0 1 5 5v6H10a5 5 0 0 1-5-5V4Z" fill="white" opacity=".9"/>
-        <path d="M13 4h6v6a5 5 0 0 1-5 5h-6V9a5 5 0 0 1 5-5Z" stroke="white" strokeWidth="2" opacity=".9"/>
-      </svg>
+      {children}
     </div>
   );
 }
@@ -228,23 +228,15 @@ function LogoMono({ variant }: { variant: "light" | "dark" }) {
   if (variant === "dark") {
     return (
       <div className="flex items-center gap-2 rounded-md bg-[#0F172A] px-3 py-2 text-white">
-        <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path d="M5 4h6a5 5 0 0 1 5 5v6H10a5 5 0 0 1-5-5V4Z" fill="#fff"/>
-          </svg>
-        </div>
-        <span className="font-semibold">PillMind</span>
+          <Logo/>
+        <span className="text-xl font-semibold text-[#0EA8BC]">PillMind</span>
       </div>
     );
   }
   return (
     <div className="flex items-center gap-2 rounded-md bg-white px-3 py-2 text-[#0F172A] border border-[#E2E8F0]">
-      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#0EA8BC]">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path d="M5 4h6a5 5 0 0 1 5 5v6H10a5 5 0 0 1-5-5V4Z" fill="#fff"/>
-        </svg>
-      </div>
-      <span className="font-semibold">PillMind</span>
+      <Logo/>
+      <span className="text-xl font-semibold text-[#0EA8BC]">PillMind</span>
     </div>
   );
 }
@@ -257,8 +249,8 @@ function ClearspaceDemo() {
         <div className="relative grid place-items-center rounded-lg border border-[#E2E8F0] bg-white p-6">
           <div className="absolute inset-2 rounded border-2 border-dashed border-[#A3E4EC]" />
           <div className="flex items-center gap-3">
-            <BrandGlyph />
-            <span className="text-xl font-semibold">PillMind</span>
+            <Logo/>
+            <span className="text-xl font-semibold text-[#0EA8BC]">PillMind</span>
           </div>
         </div>
         <div className="text-xs text-[#64748B]">Area</div>
@@ -272,9 +264,12 @@ function GoodExample({ label, gradient, iconOnly }: { label: string; gradient?: 
     <div className="rounded-lg border border-[#E2E8F0] bg-white p-4 shadow-card">
       <div className={`grid place-items-center rounded-md ${gradient ? "bg-gradient-to-br from-[#12B5C9] via-[#2ED3B7] to-[#3EC7E6]" : "bg-white border border-[#E2E8F0]"} h-28` }>
         <div className="flex items-center gap-2">
-          <BrandGlyph />
-          {!iconOnly && <span className={`font-semibold ${gradient ? "text-white" : "text-[#0F172A]"}`}>PillMind</span>}
+    <div className={`flex items-center justify-center gap-2 rounded-[10px] p-1 ${gradient ? "bg-white/80" : ""}  `}>
+        <Logo/>
+          {!iconOnly && <span className={`font-semibold ${gradient ? "text-[#0EA8BC]" : "text-[#0EA8BC]"}`}>PillMind</span>}
         </div>
+        </div>
+
       </div>
       <div className="mt-3 flex items-center gap-2 text-sm text-[#16A34A]"><Check className="h-4 w-4"/> {label}</div>
     </div>
@@ -287,19 +282,19 @@ function BadExample({ label, type }: { label: string; type: "stretch" | "low-con
       <div className="grid place-items-center h-28 rounded-md bg-white border border-[#E2E8F0]">
         {type === "stretch" && (
           <div className="flex items-center gap-2">
-            <div className="h-8 w-20 rounded-md bg-gradient-to-r from-[#12B5C9] to-[#3EC7E6]" />
+                <Logo classNameStyles="w-20 h-8"/>
             <span className="text-xl font-semibold tracking-[0.4em]">PillMind</span>
           </div>
         )}
         {type === "low-contrast" && (
           <div className="flex items-center gap-2" style={{ filter: "contrast(60%)" }}>
-            <BrandGlyph />
+            <Logo/>
             <span className="text-xl font-semibold text-[#94A3B8]">PillMind</span>
           </div>
         )}
         {type === "recolor" && (
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md" style={{ background: "linear-gradient(45deg, #F59E0B, #EF4444)" }} />
+            <Logo/>
             <span className="text-xl font-semibold" style={{ color: "#F59E0B" }}>PillMind</span>
           </div>
         )}
@@ -653,7 +648,10 @@ function BrandCardPreview() {
     <div className="w-full max-w-[420px] rounded-[20px] border border-white/40 bg-white/10 p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
       <div className="rounded-[16px] border border-white/40 bg-white/10 p-4">
         <div className="flex items-center gap-3">
-          <BrandGlyph />
+            <BrandGlyph>
+        <MousePointer2 color="white" className="w-5 h-5"/>
+        </BrandGlyph>
+
           <div>
             <p className="text-sm font-semibold">Primary button</p>
             <p className="text-xs text-white/80">Radius 12 • Teal 600</p>
