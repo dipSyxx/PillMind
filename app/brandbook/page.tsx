@@ -13,16 +13,18 @@ import {
   ExternalLink,
   Book,
   MousePointer2,
+  ArrowBigLeft,
+  Command,
 } from 'lucide-react'
-import { Logo } from '@/components/shared'
+import { BrandBookBtn, Logo } from '@/components/shared'
 
 export default function BrandbookPage() {
   return (
-    <main className="min-h-screen bg-[#F1F5F9] text-[#0F172A]">
+    <main className="relative min-h-screen bg-[#F1F5F9] text-[#0F172A]">
       <Header />
       <Hero />
       <AnchorNav />
-      <Section id="logo" title="Logo & Usage" icon={<LogoIcon />}>
+      <Section id="logo" title="Logo & Usage" icon={<Command className="h-5 w-5" />}>
         <LogoBlock />
       </Section>
       <Section id="colors" title="Color Palette" icon={<PaletteIcon className="h-5 w-5" />}>
@@ -47,6 +49,9 @@ export default function BrandbookPage() {
         <AssetsBlock />
       </Section>
       <Footer />
+      <BrandBookBtn link="/">
+        <ArrowBigLeft color="white" className="w-7 h-7" />
+      </BrandBookBtn>
     </main>
   )
 }

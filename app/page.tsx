@@ -1,13 +1,13 @@
 'use client'
 
 import type React from 'react'
-import { Header, Footer, CTA } from '@/components/shared'
+import { Header, Footer, CTA, BrandBookBtn } from '@/components/shared'
 import { Hero, Trust, HowItWorks, Features, Security, Pricing, FAQ } from '@/components/sections'
-import { Button } from '@/components/ui/button'
+import { Book } from 'lucide-react'
 
 export default function PillMindLanding() {
   return (
-    <main className="min-h-screen bg-[#F1F5F9] text-[#0F172A]">
+    <main className="relative min-h-screen bg-[#F1F5F9] text-[#0F172A]">
       <Header />
       <Hero />
       <Trust />
@@ -18,6 +18,10 @@ export default function PillMindLanding() {
       <FAQ />
       <CTA />
       <Footer />
+
+      <BrandBookBtn link="/brandbook">
+        <Book color="white" className="w-7 h-7" />
+      </BrandBookBtn>
     </main>
   )
 }
