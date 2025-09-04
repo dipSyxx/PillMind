@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { Header, Footer, CTA } from "@/components/shared"
-import { Hero, Trust, HowItWorks, Features, Security, Pricing, FAQ } from "@/components/sections"
-import { Button } from "@/components/ui/button"
+import type React from 'react'
+import { Header, Footer, CTA } from '@/components/shared'
+import { Hero, Trust, HowItWorks, Features, Security, Pricing, FAQ } from '@/components/sections'
+import { Button } from '@/components/ui/button'
 
 export default function PillMindLanding() {
   return (

@@ -1,4 +1,4 @@
-export function Check({ className = "" }: { className?: string }) {
+export function Check({ className = '' }: { className?: string }) {
   return (
     <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path d="M20 6 9 17l-5-5" stroke="#0EA8BC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

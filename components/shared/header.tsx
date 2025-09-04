@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { motion } from "framer-motion"
-import { Container } from "./container"
-import { Logo } from "./logo"
+import type React from 'react'
+import { motion } from 'framer-motion'
+import { Container } from './container'
+import { Logo } from './logo'
 
 export function Header() {
   return (
@@ -27,11 +27,11 @@ export function Header() {
           </motion.a>
           <nav className="hidden md:flex items-center gap-8 text-sm text-[#334155]">
             {[
-              { href: "#how", text: "How it works" },
-              { href: "#features", text: "Features" },
-              { href: "#security", text: "Security" },
-              { href: "#pricing", text: "Pricing" },
-              { href: "#faq", text: "FAQ" },
+              { href: '#how', text: 'How it works' },
+              { href: '#features', text: 'Features' },
+              { href: '#security', text: 'Security' },
+              { href: '#pricing', text: 'Pricing' },
+              { href: '#faq', text: 'FAQ' },
             ].map((item, index) => (
               <motion.a
                 key={item.href}

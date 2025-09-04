@@ -1,7 +1,7 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { motion } from "framer-motion"
+import type React from 'react'
+import { motion } from 'framer-motion'
 
 interface HeaderBlockProps {
   eyebrow?: string

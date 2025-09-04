@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { motion } from "framer-motion"
-import { Container } from "./container"
-import { Logo } from "./logo"
+import type React from 'react'
+import { motion } from 'framer-motion'
+import { Container } from './container'
+import { Logo } from './logo'
 
 export function Footer() {
   return (
@@ -38,10 +38,10 @@ export function Footer() {
             <p className="font-semibold">Menu</p>
             <ul className="mt-2 space-y-1">
               {[
-                { href: "#features", text: "Features" },
-                { href: "#security", text: "Security" },
-                { href: "#pricing", text: "Pricing" },
-                { href: "#faq", text: "FAQ" },
+                { href: '#features', text: 'Features' },
+                { href: '#security', text: 'Security' },
+                { href: '#pricing', text: 'Pricing' },
+                { href: '#faq', text: 'FAQ' },
               ].map((item) => (
                 <li key={item.href}>
                   <a href={item.href} className="hover:text-[#0EA8BC] transition-colors">

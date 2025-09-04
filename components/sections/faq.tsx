@@ -1,23 +1,23 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { motion } from "framer-motion"
-import { Container } from "../shared/container"
-import { HeaderBlock } from "../shared/header-block"
+import type React from 'react'
+import { motion } from 'framer-motion'
+import { Container } from '../shared/container'
+import { HeaderBlock } from '../shared/header-block'
 
 export function FAQ() {
   const qas = [
     {
-      q: "Do you store prescriptions?",
-      a: "No, we only store data you intentionally add. You can export/delete anytime.",
+      q: 'Do you store prescriptions?',
+      a: 'No, we only store data you intentionally add. You can export/delete anytime.',
     },
     {
-      q: "How does the AI work?",
-      a: "It analyzes your data and regimen, suggests typical dosages and checks interactions. It is not a medical diagnosis.",
+      q: 'How does the AI work?',
+      a: 'It analyzes your data and regimen, suggests typical dosages and checks interactions. It is not a medical diagnosis.',
     },
     {
-      q: "Do I need internet access?",
-      a: "Basic reminders work offline; sync and analytics require a connection.",
+      q: 'Do I need internet access?',
+      a: 'Basic reminders work offline; sync and analytics require a connection.',
     },
   ]
 
@@ -43,6 +43,8 @@ export function FAQ() {
               viewport={{ once: true }}
             >
               <summary className="flex cursor-pointer list-none items-center justify-between">
+                <h3 className="font-medium text-[#0F172A]">{item.q}</h3>
+                <h3 className="font-medium text-[#0F172A]">{item.q}</h3>
                 <h3 className="font-medium text-[#0F172A]">{item.q}</h3>
                 <span className="text-[#64748B] group-open:rotate-180 transition-transform">▾</span>
               </summary>

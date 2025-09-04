@@ -1,23 +1,23 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { motion } from "framer-motion"
-import { Container } from "../shared/container"
-import { HeaderBlock } from "../shared/header-block"
+import type React from 'react'
+import { motion } from 'framer-motion'
+import { Container } from '../shared/container'
+import { HeaderBlock } from '../shared/header-block'
 
 export function HowItWorks() {
   const steps = [
     {
-      title: "Add your meds",
-      text: "Manually or via the AI agent. Set dosage and schedule.",
+      title: 'Add your meds',
+      text: 'Manually or via the AI agent. Set dosage and schedule.',
     },
     {
-      title: "Get reminders",
-      text: "On-time push notifications. Missed doses under control.",
+      title: 'Get reminders',
+      text: 'On-time push notifications. Missed doses under control.',
     },
     {
-      title: "Act with confidence",
-      text: "Interaction checks and personal regimen tips.",
+      title: 'Act with confidence',
+      text: 'Interaction checks and personal regimen tips.',
     },
   ]
 
@@ -45,7 +45,10 @@ export function HowItWorks() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.2, duration: 0.6 }}
               viewport={{ once: true }}
-              whileHover={{ y: -5, transition: { duration: 0.2 } }}
+              whileHover={{
+                y: -5,
+                transition: { duration: 0.2 },
+              }}
             >
               <motion.div
                 className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#12B5C9]/10 text-[#0EA8BC] font-bold"

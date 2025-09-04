@@ -1,8 +1,8 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { motion } from "framer-motion"
-import { Container } from "./container"
+import type React from 'react'
+import { motion } from 'framer-motion'
+import { Container } from './container'
 
 export function CTA() {
   return (

@@ -1,9 +1,9 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { motion } from "framer-motion"
-import { Container } from "../shared/container"
-import { Shield } from "../shared/icons"
+import type React from 'react'
+import { motion } from 'framer-motion'
+import { Container } from '../shared/container'
+import { Shield } from '../shared/icons'
 
 export function Trust() {
   return (
@@ -16,7 +16,7 @@ export function Trust() {
     >
       <Container>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center text-sm text-[#64748B]">
-          {["GDPR Ready", "Encryption", "Access control", "Does not replace a doctor"].map((text, index) => (
+          {['GDPR Ready', 'Encryption', 'Access control', 'Does not replace a doctor'].map((text, index) => (
             <motion.div
               key={text}
               className="flex items-center justify-center gap-2"

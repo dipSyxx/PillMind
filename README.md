@@ -52,6 +52,7 @@ PillMind/
 ## 🎨 Design System
 
 ### Color Palette
+
 - **Primary**: `#0EA8BC` (Teal)
 - **Secondary**: `#12B5C9` (Light Teal)
 - **Accent**: `#2ED3B7` (Mint)
@@ -59,12 +60,14 @@ PillMind/
 - **Text**: `#0F172A` (Dark Blue)
 
 ### Typography
+
 - **Primary Font**: Inter (Latin + Cyrillic support)
 - **Monospace Font**: JetBrains Mono
 - **Base Size**: 16px
 - **Line Height**: 1.5
 
 ### Components
+
 - **Buttons**: Custom variants with PillMind colors
 - **Cards**: Rounded corners (16px) with subtle shadows
 - **Containers**: Max-width 1200px with responsive padding
@@ -72,10 +75,12 @@ PillMind/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+
+- Node.js 18+
 - pnpm (recommended) or npm
 
 ### Installation
+
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -89,6 +94,7 @@ pnpm dev
 ```
 
 ### Build
+
 ```bash
 # Build for production
 pnpm build
@@ -100,6 +106,7 @@ pnpm start
 ## 📱 Features
 
 ### Core Functionality
+
 - **Medication Tracking**: Add and manage medications
 - **Smart Reminders**: Customizable notification system
 - **Interaction Checks**: Safety warnings for drug combinations
@@ -107,6 +114,7 @@ pnpm start
 - **Data Export**: PDF/CSV export for healthcare providers
 
 ### Technical Features
+
 - **Responsive Design**: Mobile-first approach
 - **SEO Optimized**: Meta tags, sitemap, robots.txt
 - **Performance**: Optimized images and animations
@@ -116,6 +124,7 @@ pnpm start
 ## 🔧 Configuration
 
 ### Environment Variables
+
 ```bash
 # .env.local
 NEXT_PUBLIC_GA_MEASUREMENT_ID=your-ga-id
@@ -123,10 +132,13 @@ SITE_URL=https://pillmind.app
 ```
 
 ### Sitemap
+
 The project includes automatic sitemap generation using Next.js built-in sitemap generation. The sitemap is automatically available at `/sitemap.xml`.
 
 ### Analytics
+
 Google Analytics 4 integration is included with custom event tracking for:
+
 - Page views
 - Button clicks
 - Form submissions
@@ -136,14 +148,18 @@ Google Analytics 4 integration is included with custom event tracking for:
 ## 📁 Component Architecture
 
 ### Sections
+
 Each section is a self-contained component with:
+
 - Framer Motion animations
 - Responsive design
 - Accessibility features
 - SEO-friendly markup
 
 ### Shared Components
+
 Reusable components used across multiple sections:
+
 - **Container**: Consistent layout wrapper
 - **HeaderBlock**: Section title and subtitle
 - **Icons**: SVG icons with consistent styling
@@ -151,6 +167,7 @@ Reusable components used across multiple sections:
 ## 🎭 Animations
 
 Built with Framer Motion for smooth, performant animations:
+
 - **Entrance**: Fade-in and slide-in effects
 - **Hover**: Scale and color transitions
 - **Scroll**: Viewport-based animations
@@ -159,6 +176,7 @@ Built with Framer Motion for smooth, performant animations:
 ## 🌐 SEO & Performance
 
 ### SEO Features
+
 - Dynamic metadata generation
 - Open Graph tags
 - Twitter Card support
@@ -167,6 +185,7 @@ Built with Framer Motion for smooth, performant animations:
 - Robots.txt configuration
 
 ### Performance Optimizations
+
 - Image optimization
 - Font optimization
 - Code splitting
@@ -176,7 +195,9 @@ Built with Framer Motion for smooth, performant animations:
 ## 📚 Content Management
 
 ### MDX Support
+
 Content is managed through MDX files in the `content/` directory:
+
 - **FAQ**: Frequently asked questions
 - **Terms**: Terms of service
 - **Localization**: Support for multiple languages
@@ -184,6 +205,7 @@ Content is managed through MDX files in the `content/` directory:
 ## 🔒 Security
 
 ### Data Protection
+
 - GDPR compliance
 - Data encryption
 - Access control

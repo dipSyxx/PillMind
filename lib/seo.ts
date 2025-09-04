@@ -3,9 +3,10 @@ import type { Metadata } from 'next'
 export const defaultMetadata: Metadata = {
   title: {
     default: 'PillMind - Taking medicine has become easier',
-    template: '%s | PillMind'
+    template: '%s | PillMind',
   },
-  description: 'PillMind reminds you about your intake, analyzes your data, and suggests safe combinations. With your permission — and only for you.',
+  description:
+    'PillMind reminds you about your intake, analyzes your data, and suggests safe combinations. With your permission — and only for you.',
   keywords: ['medicine', 'reminders', 'health', 'medication', 'app', 'pill reminder', 'healthcare'],
   authors: [{ name: 'PillMind Team' }],
   creator: 'PillMind',
@@ -19,8 +20,8 @@ export const defaultMetadata: Metadata = {
   alternates: {
     canonical: '/',
     languages: {
-      'uk': '/uk',
-      'en': '/en',
+      uk: '/uk',
+      en: '/en',
     },
   },
   openGraph: {

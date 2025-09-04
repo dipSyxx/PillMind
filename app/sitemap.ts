@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://v0-pill-mind-landing-page.vercel.app'
-  
+
   return [
     {
       url: baseUrl,

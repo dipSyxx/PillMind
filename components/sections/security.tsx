@@ -1,17 +1,17 @@
-"use client"
+'use client'
 
-import type React from "react"
-import { motion } from "framer-motion"
-import { Container } from "../shared/container"
-import { HeaderBlock } from "../shared/header-block"
-import { Shield } from "../shared/icons"
+import type React from 'react'
+import { motion } from 'framer-motion'
+import { Container } from '../shared/container'
+import { HeaderBlock } from '../shared/header-block'
+import { Shield } from '../shared/icons'
 
 export function Security() {
   const points = [
-    "Data encryption at rest and in transit",
-    "Access control & transparent permissions",
-    "GDPR compliance and localized storage",
-    "Export and delete data on user request",
+    'Data encryption at rest and in transit',
+    'Access control & transparent permissions',
+    'GDPR compliance and localized storage',
+    'Export and delete data on user request',
   ]
 
   return (
@@ -47,7 +47,10 @@ export function Security() {
                   key={point}
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1, duration: 0.5 }}
+                  transition={{
+                    delay: index * 0.1,
+                    duration: 0.5,
+                  }}
                   viewport={{ once: true }}
                 >
                   {point}
