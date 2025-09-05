@@ -812,7 +812,7 @@ function CardBody({ children }: { children: React.ReactNode }) {
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <pre className="whitespace-pre-wrap rounded-[12px] border border-[#E2E8F0] bg-[#0F172A] p-3 text-xs text-[#E2E8F0]">
+    <pre className="whitespace-pre-wrap rounded-[12px] border border-[#E2E8F0] bg-[#0F172A] p-3 text-xs text-[#E2E8F0] break-words">
       <code>{children}</code>
     </pre>
   )

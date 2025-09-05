@@ -4,7 +4,7 @@ import type React from 'react'
 import { motion } from 'framer-motion'
 import { Container } from '../shared/container'
 import { HeaderBlock } from '../shared/header-block'
-import { Shield } from '../shared/icons'
+import { Shield } from 'lucide-react'
 
 export function Security() {
   const points = [

@@ -3,7 +3,7 @@
 import type React from 'react'
 import { motion } from 'framer-motion'
 import { Container } from '../shared/container'
-import { Shield } from '../shared/icons'
+import { Shield } from 'lucide-react'
 
 export function Trust() {
   return (
@@ -25,7 +25,7 @@ export function Trust() {
               transition={{ delay: index * 0.1, duration: 0.5 }}
               viewport={{ once: true }}
             >
-              <Shield />
+              <Shield className="text-[#0EA8BC]" />
               <span>{text}</span>
             </motion.div>
           ))}

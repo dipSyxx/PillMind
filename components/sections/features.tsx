@@ -4,7 +4,7 @@ import type React from 'react'
 import { motion } from 'framer-motion'
 import { Container } from '../shared/container'
 import { HeaderBlock } from '../shared/header-block'
-import { Check } from '../shared/icons'
+import { Check } from 'lucide-react'
 
 export function Features() {
   const list = [
@@ -55,7 +55,7 @@ export function Features() {
                 transition: { duration: 0.2 },
               }}
             >
-              <Check className="mt-1" />
+              <Check className=" text-[#0EA8BC]" />
               <div>
                 <h3 className="font-semibold">{feature.title}</h3>
                 <p className="mt-1 text-sm text-[#64748B]">{feature.text}</p>

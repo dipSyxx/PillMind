@@ -4,7 +4,7 @@ import type React from 'react'
 import { motion } from 'framer-motion'
 import { Container } from '../shared/container'
 import { HeaderBlock } from '../shared/header-block'
-import { Check } from '../shared/icons'
+import { Check } from 'lucide-react'
 
 export function Pricing() {
   const tiers = [
@@ -71,7 +71,7 @@ export function Pricing() {
                     }}
                     viewport={{ once: true }}
                   >
-                    <Check /> {feature}
+                    <Check className="text-[#0EA8BC]" /> {feature}
                   </motion.li>
                 ))}
               </ul>
