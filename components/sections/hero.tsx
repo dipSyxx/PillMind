@@ -3,7 +3,8 @@
 import type React from 'react'
 import { motion } from 'framer-motion'
 import { Container } from '../shared/container'
-import { Pill } from 'lucide-react'
+import { ExternalLink, Loader2, Pill, SearchIcon } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 function MiniAnalytics({ delay = 0 }: { delay?: number }) {
   const data = [68, 72, 55, 80, 62, 90, 76]
@@ -125,6 +126,238 @@ function MiniAnalytics({ delay = 0 }: { delay?: number }) {
   )
 }
 
+type FkItem = {
+  title: string
+  formattedTitle?: string
+  extraText?: string
+  seoUrl?: string | null
+  searchValue?: string
+  type?: string
+}
+
+type FkResponse = {
+  elements: FkItem[]
+  fullList?: boolean
+}
+
+function cn(...cls: Array<string | false | null | undefined>) {
+  return cls.filter(Boolean).join(' ')
+}
+
+function stripTags(html?: string) {
+  if (!html) return ''
+  const tmp = typeof window !== 'undefined' ? document.createElement('div') : null
+  if (!tmp) return html
+  tmp.innerHTML = html
+  return tmp.textContent || tmp.innerText || ''
+}
+
+function useDebouncedValue<T>(value: T, delay: number) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(id)
+  }, [value, delay])
+  return debounced
+}
+
+function MedSearch() {
+  const [q, setQ] = useState('')
+  const debouncedQ = useDebouncedValue(q, 300)
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [results, setResults] = useState<FkItem[]>([])
+  const [active, setActive] = useState(0)
+
+  const rootRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!rootRef.current) return
+      if (!rootRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [])
+
+  useEffect(() => {
+    let abort = new AbortController()
+
+    const run = async () => {
+      if (!debouncedQ.trim()) {
+        setResults([])
+        setLoading(false)
+        return
+      }
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/fk-search?term=${encodeURIComponent(debouncedQ)}&maxRows=0`, {
+          signal: abort.signal,
+          cache: 'no-store',
+        })
+        if (!res.ok) throw new Error('Search failed')
+        const data: FkResponse = await res.json()
+        setResults(data?.elements || [])
+        setActive(0)
+      } catch {
+        if (!abort.signal.aborted) {
+          setResults([])
+        }
+      } finally {
+        if (!abort.signal.aborted) setLoading(false)
+      }
+    }
+
+    run()
+    return () => abort.abort()
+  }, [debouncedQ])
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open) return
+    if (!results.length) return
+
+    switch (e.key) {
+      case 'ArrowDown': {
+        e.preventDefault()
+        setActive((a) => Math.min(a + 1, results.length - 1))
+        const el = listRef.current?.querySelector(`[data-idx="${Math.min(active + 1, results.length - 1)}"]`)
+        ;(el as HTMLElement | null)?.scrollIntoView({ block: 'nearest' })
+        break
+      }
+      case 'ArrowUp': {
+        e.preventDefault()
+        setActive((a) => Math.max(a - 1, 0))
+        const el = listRef.current?.querySelector(`[data-idx="${Math.max(active - 1, 0)}"]`)
+        ;(el as HTMLElement | null)?.scrollIntoView({ block: 'nearest' })
+        break
+      }
+      case 'Enter': {
+        e.preventDefault()
+        const item = results[active]
+        if (item) handlePick(item)
+        break
+      }
+      case 'Escape': {
+        setOpen(false)
+        break
+      }
+    }
+  }
+
+  const handlePick = (item: FkItem) => {
+    const label = item.searchValue || stripTags(item.formattedTitle) || item.title
+
+    const url = item.seoUrl
+      ? `https://www.felleskatalogen.no/medisin${item.seoUrl}`
+      : `https://www.felleskatalogen.no/medisin/internsok?sokord=${encodeURIComponent(label)}`
+
+    setQ(label)
+    setOpen(false)
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  const hasQuery = q.trim().length > 0
+  useEffect(() => {
+    setOpen(hasQuery)
+  }, [hasQuery])
+
+  return (
+    <div ref={rootRef} className="relative w-full">
+      <div className="relative">
+        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#12B5C9]" size={16} />
+        <input
+          ref={inputRef}
+          type="text"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          onFocus={() => q.trim() && setOpen(true)}
+          onKeyDown={onKeyDown}
+          placeholder="Search Meds"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-controls="med-search-listbox"
+          className="h-8 w-full rounded-[12px] border border-[#CBD5E1] bg-white pl-8 pr-8 text-[#0F172A] outline-none transition focus:border-[#0EA8BC] focus:ring-4 focus:ring-[#12B5C9]/20"
+        />
+        {q && (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={() => {
+              setQ('')
+              setResults([])
+              setOpen(false)
+              inputRef.current?.focus()
+            }}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-1 text-[#64748B] hover:bg-slate-100"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
+      {open && (
+        <motion.div
+          id="med-search-listbox"
+          role="listbox"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.15 }}
+          className="absolute left-0 right-0 z-20 mt-1 max-h-64 overflow-auto rounded-[12px] border border-[#E2E8F0] bg-white shadow-lg"
+          ref={listRef}
+        >
+          {/* Loading state */}
+          {loading && (
+            <div className="flex items-center gap-2 p-3 text-sm text-[#64748B]">
+              <Loader2 className="animate-spin" size={16} />
+              Searching…
+            </div>
+          )}
+
+          {/* Results */}
+          {!loading &&
+            results.length > 0 &&
+            results.map((item, idx) => (
+              <button
+                key={`${item.seoUrl ?? item.title}-${idx}`}
+                title={item.title}
+                type="button"
+                role="option"
+                aria-selected={active === idx}
+                data-idx={idx}
+                onMouseEnter={() => setActive(idx)}
+                onClick={() => handlePick(item)}
+                className={cn(
+                  'w-full cursor-pointer px-3 py-2 text-left transition',
+                  active === idx ? 'bg-[#F1F5F9]' : 'hover:bg-[#F8FAFC]',
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div
+                      className="truncate text-sm font-medium text-[#0F172A]"
+                      dangerouslySetInnerHTML={{
+                        __html: item.formattedTitle || item.title,
+                      }}
+                    />
+                    {item.extraText && <p className="mt-0.5 line-clamp-1 text-xs text-[#64748B]">{item.extraText}</p>}
+                  </div>
+                  <ExternalLink size={16} className="shrink-0 text-[#94A3B8]" />
+                </div>
+              </button>
+            ))}
+
+          {/* Empty */}
+          {!loading && hasQuery && results.length === 0 && <div className="p-3 text-sm text-[#64748B]">No results</div>}
+        </motion.div>
+      )}
+    </div>
+  )
+}
+
 export function Hero() {
   return (
     <section
@@ -220,8 +453,11 @@ export function Hero() {
               transition={{ duration: 0.3 }}
             >
               <div className="h-full rounded-[20px] border border-[#E2E8F0] bg-gradient-to-b from-[#F8FAFC] to-white p-5">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-[#334155]">My meds</span>
+                <div className="flex gap-3 items-center justify-between">
+                  <span className="min-w-[63px] text-sm font-semibold text-[#334155]">My meds</span>
+                  <div className="w-full">
+                    <MedSearch />
+                  </div>
                   <span className="text-xs text-[#64748B]">Today</span>
                 </div>
                 <div className="mt-4 space-y-3">

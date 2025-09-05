@@ -44,8 +44,6 @@ export function FAQ() {
             >
               <summary className="flex cursor-pointer list-none items-center justify-between">
                 <h3 className="font-medium text-[#0F172A]">{item.q}</h3>
-                <h3 className="font-medium text-[#0F172A]">{item.q}</h3>
-                <h3 className="font-medium text-[#0F172A]">{item.q}</h3>
                 <span className="text-[#64748B] group-open:rotate-180 transition-transform">▾</span>
               </summary>
               <p className="mt-2 text-sm text-[#334155]">{item.a}</p>
