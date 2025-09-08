@@ -3,7 +3,7 @@
 import type React from 'react'
 import { Header, Footer, CTA, BrandBookBtn } from '@/components/shared'
 import { Hero, Trust, HowItWorks, Features, Security, Pricing, FAQ } from '@/components/sections'
-import { Book } from 'lucide-react'
+import { Book, QrCode } from 'lucide-react'
 
 export default function PillMindLanding() {
   return (
@@ -18,6 +18,10 @@ export default function PillMindLanding() {
       <FAQ />
       <CTA />
       <Footer />
+
+      <BrandBookBtn link="/marketing-materials" classNamePosition="right-10 bottom-[105px]">
+        <QrCode color="white" className="w-7 h-7" />
+      </BrandBookBtn>
 
       <BrandBookBtn link="/brandbook">
         <Book color="white" className="w-7 h-7" />
