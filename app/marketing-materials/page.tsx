@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
 import {
   Target,
   Users,
@@ -63,12 +64,12 @@ function HeroPreviewCard() {
         <div className="text-sm font-semibold">Campaign snippet</div>
         <div className="mt-2 rounded-md bg-white/10 p-3 text-xs">Taking your meds just got easier — Try the demo</div>
         <div className="mt-3 flex gap-2">
-          <button className="rounded-[12px] bg-white px-4 py-2 text-sm font-semibold text-[#0F172A] hover:bg-white/90">
+          <Button variant="pillmindWhite" size="sm">
             Download kit
-          </button>
-          <button className="rounded-[12px] border border-white/70 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">
+          </Button>
+          <Button variant="pillmindWhiteOutline" size="sm">
             See templates
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -627,12 +628,9 @@ function CopyCard({ title, text }: { title: string; text: string }) {
       <CardHeader title={title} />
       <CardBody>
         <Code>{text}</Code>
-        <button
-          onClick={copy}
-          className="mt-2 inline-flex items-center gap-1 rounded-md border border-[#0EA8BC] px-3 py-1 text-sm text-[#0EA8BC] hover:bg-[#E6F7FA]"
-        >
+        <Button onClick={copy} variant="copy" size="copy" className="mt-2">
           <Copy className="h-4 w-4" /> {copied ? 'Copied' : 'Copy'}
-        </button>
+        </Button>
       </CardBody>
     </Card>
   )

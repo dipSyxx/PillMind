@@ -5,6 +5,7 @@ import { motion } from 'framer-motion'
 import { Container } from '../shared/container'
 import { HeaderBlock } from '../shared/header-block'
 import { Check } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 export function Pricing() {
   const tiers = [
@@ -75,14 +76,16 @@ export function Pricing() {
                   </motion.li>
                 ))}
               </ul>
-              <motion.a
-                href="#cta"
-                className={`mt-6 inline-flex w-full items-center justify-center rounded-[12px] px-4 py-3 font-semibold transition-colors ${tier.highlighted ? 'bg-[#0EA8BC] text-white hover:bg-[#0B95A8]' : 'border border-[#0EA8BC] text-[#0EA8BC] hover:bg-[#E6F7FA]'}`}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <Button
+                asChild
+                variant={tier.highlighted ? 'pillmind' : 'pillmindOutline'}
+                size="md"
+                className="mt-6 w-full"
               >
-                {tier.cta}
-              </motion.a>
+                <motion.a href="#cta" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  {tier.cta}
+                </motion.a>
+              </Button>
             </motion.div>
           ))}
         </div>

@@ -10,6 +10,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue'
 import { useOutsideClick } from '@/hooks/useOutsideClick'
 import { useFkSearch } from '@/hooks/useFkSearch'
 import { MiniAnalytics } from '../shared/mini-analytics'
+import { Button } from '@/components/ui/button'
 
 export type FkItem = {
   title: string
@@ -115,7 +116,7 @@ function MedSearch() {
           className="h-8 w-full rounded-[12px] border border-[#CBD5E1] bg-white pl-8 pr-8 text-[#0F172A] outline-none transition focus:border-[#0EA8BC] focus:ring-4 focus:ring-[#12B5C9]/20"
         />
         {q && (
-          <button
+          <Button
             type="button"
             aria-label="Clear search"
             onClick={() => {
@@ -123,10 +124,12 @@ function MedSearch() {
               setOpen(false)
               inputRef.current?.focus()
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-1 text-[#64748B] hover:bg-slate-100"
+            variant="clear"
+            size="clear"
+            className="absolute right-2 top-1/2 -translate-y-1/2"
           >
             ×
-          </button>
+          </Button>
         )}
       </div>
 
@@ -152,7 +155,7 @@ function MedSearch() {
           {!loading &&
             results.length > 0 &&
             results.map((item, idx) => (
-              <button
+              <Button
                 key={`${item.seoUrl ?? item.title}-${idx}`}
                 title={item.title}
                 type="button"
@@ -161,10 +164,8 @@ function MedSearch() {
                 data-idx={idx}
                 onMouseEnter={() => setActive(idx)}
                 onClick={() => handlePick(item)}
-                className={cn(
-                  'w-full cursor-pointer px-3 py-2 text-left transition',
-                  active === idx ? 'bg-[#F1F5F9]' : 'hover:bg-[#F8FAFC]',
-                )}
+                variant={active === idx ? 'searchResultActive' : 'searchResult'}
+                size="searchResult"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
@@ -178,7 +179,7 @@ function MedSearch() {
                   </div>
                   <ExternalLink size={16} className="shrink-0 text-[#94A3B8]" />
                 </div>
-              </button>
+              </Button>
             ))}
 
           {/* Empty */}
@@ -221,22 +222,16 @@ export function Hero() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.8 }}
             >
-              <motion.a
-                href="#cta"
-                className="inline-flex items-center justify-center rounded-[12px] bg-white px-6 py-3 text-[#0F172A] font-semibold hover:bg-white/90 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Try the demo
-              </motion.a>
-              <motion.a
-                href="#how"
-                className="inline-flex items-center justify-center rounded-[12px] border border-white/70 px-6 py-3 font-semibold text-white hover:bg-white/10 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Learn more
-              </motion.a>
+              <Button asChild variant="pillmindWhite" size="lg">
+                <motion.a href="#cta" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  Try the demo
+                </motion.a>
+              </Button>
+              <Button asChild variant="pillmindWhiteOutline" size="lg">
+                <motion.a href="#how" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  Learn more
+                </motion.a>
+              </Button>
             </motion.div>
             <motion.ul
               className="mt-6 flex flex-wrap gap-4 text-white/90 text-sm"

@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
+import { Button } from '@/components/ui/button'
 import {
   Check,
   Copy,
@@ -480,9 +481,10 @@ function ColorSwatch({ swatch }: { swatch: Swatch }) {
     return luminance > 0.75 // very light like Slate 100
   }, [swatch.hex])
   return (
-    <button
+    <Button
       onClick={handleCopy}
-      className="group relative rounded-lg border border-[#E2E8F0] bg-white text-left shadow-card transition hover:-translate-y-0.5"
+      variant="outline"
+      className="group relative rounded-lg text-left shadow-card transition hover:-translate-y-0.5 h-auto p-0"
     >
       <div className="h-16 rounded-t-lg" style={{ backgroundColor: swatch.hex }} />
       <div className="p-3">
@@ -499,7 +501,7 @@ function ColorSwatch({ swatch }: { swatch: Swatch }) {
       <div className="absolute right-2 bottom-2 opacity-60 transition group-hover:opacity-100">
         <Copy className="h-4 w-4" />
       </div>
-    </button>
+    </Button>
   )
 }
 
@@ -572,15 +574,15 @@ function ComponentsBlock() {
         <CardHeader title="Buttons" subtitle="Primary • Secondary • Ghost" />
         <CardBody>
           <div className="flex flex-wrap gap-3">
-            <button className="h-11 rounded-[12px] bg-[#0EA8BC] px-5 font-semibold text-white transition hover:bg-[#0B95A8]">
+            <Button variant="pillmind" size="md">
               Get started
-            </button>
-            <button className="h-11 rounded-[12px] border border-[#0EA8BC] px-5 font-semibold text-[#0EA8BC] transition hover:bg-[#E6F7FA]">
+            </Button>
+            <Button variant="pillmindOutline" size="md">
               Learn more
-            </button>
-            <button className="h-11 rounded-[12px] px-5 font-semibold text-[#0EA8BC] transition hover:bg-[#12B5C9]/10">
+            </Button>
+            <Button variant="pillmindGhost" size="md">
               Ghost
-            </button>
+            </Button>
           </div>
         </CardBody>
       </Card>
@@ -863,12 +865,12 @@ function BrandCardPreview() {
           </div>
         </div>
         <div className="mt-4 flex gap-3">
-          <button className="rounded-[12px] bg-white px-4 py-2 text-sm font-semibold text-[#0F172A] hover:bg-white/90">
+          <Button variant="pillmindWhite" size="sm">
             Get started
-          </button>
-          <button className="rounded-[12px] border border-white/70 px-4 py-2 text-sm font-semibold text-white hover:bg-white/10">
+          </Button>
+          <Button variant="pillmindWhiteOutline" size="sm">
             Learn more
-          </button>
+          </Button>
         </div>
         <div className="mt-4 h-20 rounded-md bg-gradient-to-r from-white/20 via-white/10 to-white/20" />
       </div>

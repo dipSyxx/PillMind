@@ -3,6 +3,7 @@
 import type React from 'react'
 import { motion } from 'framer-motion'
 import { Container } from './container'
+import { Button } from '@/components/ui/button'
 
 export function CTA() {
   return (
@@ -26,14 +27,11 @@ export function CTA() {
           <p className="mt-2 max-w-2xl text-white/90 text-pretty">
             Try the demo and feel the peace of mind that comes with staying on top of your meds and vitamins.
           </p>
-          <motion.a
-            href="#"
-            className="mt-6 rounded-[12px] bg-white px-6 py-3 font-semibold text-[#0F172A] hover:bg-white/90 transition-colors"
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Try the demo
-          </motion.a>
+          <Button asChild variant="pillmindWhite" size="lg" className="mt-6">
+            <motion.a href="#" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              Try the demo
+            </motion.a>
+          </Button>
         </motion.div>
       </Container>
       <div className="pointer-events-none absolute -left-10 -bottom-10 h-40 w-40 rounded-full bg-white/20 blur-2xl" />

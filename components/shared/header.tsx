@@ -4,6 +4,7 @@ import type React from 'react'
 import { motion } from 'framer-motion'
 import { Container } from './container'
 import { Logo } from './logo'
+import { Button } from '@/components/ui/button'
 
 export function Header() {
   return (
@@ -47,22 +48,16 @@ export function Header() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <motion.a
-              href="#pricing"
-              className="hidden sm:inline-block rounded-[12px] border border-[#0EA8BC] px-4 py-2 text-sm font-medium text-[#0EA8BC] hover:bg-[#E6F7FA] transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              How it works
-            </motion.a>
-            <motion.a
-              href="#cta"
-              className="rounded-[12px] bg-[#0EA8BC] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0B95A8] transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Try the demo
-            </motion.a>
+            <Button asChild variant="pillmindOutline" size="md">
+              <motion.a href="#pricing" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                How it works
+              </motion.a>
+            </Button>
+            <Button asChild variant="pillmind" size="md">
+              <motion.a href="#cta" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                Try the demo
+              </motion.a>
+            </Button>
           </div>
         </div>
       </Container>
