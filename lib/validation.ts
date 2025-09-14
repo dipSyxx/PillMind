@@ -49,21 +49,29 @@ export const loginSchema = z.object({
     .min(8, "Password must be at least 8 characters"),
 })
 
+// Individual field schemas for password change
+export const currentPasswordSchema = z
+  .string()
+  .min(1, "Current password is required")
+  .min(8, "Current password must be at least 8 characters")
+
+export const newPasswordSchema = z
+  .string()
+  .min(1, "New password is required")
+  .min(8, "New password must be at least 8 characters")
+  .max(100, "New password must be less than 100 characters")
+  .regex(/^(?=.*[a-z])/, "New password must contain at least one lowercase letter")
+  .regex(/^(?=.*[A-Z])/, "New password must contain at least one uppercase letter")
+  .regex(/^(?=.*\d)/, "New password must contain at least one number")
+  .regex(/^(?=.*[@$!%*?&])/, "New password must contain at least one special character (@$!%*?&)")
+
+export const confirmNewPasswordSchema = z.string().min(1, "Please confirm your new password")
+
+// Complete password change schema with cross-field validation
 export const changePasswordSchema = z.object({
-  currentPassword: z
-    .string()
-    .min(1, "Current password is required")
-    .min(8, "Current password must be at least 8 characters"),
-  newPassword: z
-    .string()
-    .min(1, "New password is required")
-    .min(8, "New password must be at least 8 characters")
-    .max(100, "New password must be less than 100 characters")
-    .regex(/^(?=.*[a-z])/, "New password must contain at least one lowercase letter")
-    .regex(/^(?=.*[A-Z])/, "New password must contain at least one uppercase letter")
-    .regex(/^(?=.*\d)/, "New password must contain at least one number")
-    .regex(/^(?=.*[@$!%*?&])/, "New password must contain at least one special character (@$!%*?&)"),
-  confirmNewPassword: z.string().min(1, "Please confirm your new password"),
+  currentPassword: currentPasswordSchema,
+  newPassword: newPasswordSchema,
+  confirmNewPassword: confirmNewPasswordSchema,
 }).refine((data) => data.newPassword === data.confirmNewPassword, {
   message: "New passwords don't match",
   path: ["confirmNewPassword"],
