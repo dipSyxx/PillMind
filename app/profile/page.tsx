@@ -122,7 +122,7 @@ function ProfileContent() {
     try {
       const validatedData = changePasswordSchema.parse(passwordData)
 
-      const res = await fetch('/api/profile/password', {
+      const res = await fetch('/api/profile/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
