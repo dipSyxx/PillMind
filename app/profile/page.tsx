@@ -54,7 +54,7 @@ interface AccountInfo {
   hasPassword: boolean
 }
 
-function ProfileContent() {
+export default function ProfilePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(false)
@@ -919,13 +919,5 @@ function ProfileContent() {
         </div>
       </Container>
     </div>
-  )
-}
-
-export default function ProfilePage() {
-  return (
-    <AuthProvider>
-      <ProfileContent />
-    </AuthProvider>
   )
 }
