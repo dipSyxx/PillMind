@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useSession, signOut, signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
@@ -36,7 +36,6 @@ import {
   confirmNewPasswordSchema,
 } from '@/lib/validation'
 import { cn } from '@/lib/utils'
-import { signIn } from '@/lib/auth'
 
 type UserPublic = {
   id: string
