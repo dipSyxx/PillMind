@@ -420,27 +420,7 @@ export default function ProfilePage() {
                         <span className="text-sm">PillMind User</span>
                       </div>
                     </div>
-
-                    {/* Account health */}
-                    <div className="mt-5">
-                      <div className="flex items-center justify-between text-xs mb-1 opacity-90">
-                        <span>Account health</span>
-                        <span>{healthBar}%</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-white/20 overflow-hidden">
-                        <div className="h-full bg-white/90" style={{ width: `${healthBar}%` }} />
-                      </div>
-                    </div>
                   </div>
-                </div>
-                {/* meta */}
-                <div className="mt-4 text-xs text-white/80 flex flex-wrap gap-4">
-                  <span>Joined: {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '—'}</span>
-                  <span>Updated: {profile?.updatedAt ? new Date(profile.updatedAt).toLocaleString() : '—'}</span>
-                  <span>
-                    Email:{' '}
-                    {isVerified ? `verified ${new Date(profile!.emailVerified!).toLocaleDateString()}` : 'not verified'}
-                  </span>
                 </div>
               </div>
               <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
