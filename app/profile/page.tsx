@@ -273,7 +273,7 @@ export default function ProfilePage() {
     setPasswordErrors((prev) => ({ ...prev, [field]: error }))
   }
 
-  if (status === 'loading' || (userLoading && !profile)) {
+  if (!isFetching) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0] flex items-center justify-center">
         <motion.div
