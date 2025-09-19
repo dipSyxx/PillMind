@@ -492,7 +492,9 @@ export default function ProfilePage() {
                             <Calendar className="w-5 h-5 text-[#0EA8BC]" />
                             <div className="flex-1">
                               <p className="text-sm text-[#64748B]">Member Since</p>
-                              <p className="font-medium text-[#0F172A]">{profile?.createdAt}</p>
+                              <p className="font-medium text-[#0F172A]">
+                                {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'Unknown'}
+                              </p>
                             </div>
                           </div>
                         </div>
