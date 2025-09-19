@@ -81,7 +81,7 @@ export default function ProfilePage() {
 
   const [userLoading, setUserLoading] = useState(true)
   const [accountsLoading, setAccountsLoading] = useState(true)
-  const isFetching = userLoading || accountsLoading
+  const isFetchingEnd = !userLoading || !accountsLoading
 
   // Password change
   const [passwordData, setPasswordData] = useState({
@@ -273,7 +273,7 @@ export default function ProfilePage() {
     setPasswordErrors((prev) => ({ ...prev, [field]: error }))
   }
 
-  if (!isFetching) {
+  if (isFetchingEnd) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0] flex items-center justify-center">
         <motion.div
