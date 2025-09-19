@@ -79,6 +79,10 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [accountInfo, setAccountInfo] = useState<AccountInfo | null>(null)
 
+  const [userLoading, setUserLoading] = useState(true)
+  const [accountsLoading, setAccountsLoading] = useState(true)
+  const isFetching = userLoading || accountsLoading
+
   // Password change
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -110,6 +114,7 @@ export default function ProfilePage() {
   }, [status])
 
   const fetchUser = async () => {
+    setUserLoading(true)
     try {
       const res = await fetch('/api/profile/user', { cache: 'no-store' })
       if (!res.ok) {
@@ -128,16 +133,24 @@ export default function ProfilePage() {
       })
     } catch (e) {
       console.error(e)
+      setError('Unable to load your profile. Please refresh the page.')
+    } finally {
+      setUserLoading(false)
     }
   }
 
   const fetchAccountInfo = async () => {
+    setAccountsLoading(true)
     try {
       const res = await fetch('/api/profile/accounts', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed')
       const data = await res.json()
       setAccountInfo(data)
     } catch (error) {
       console.error('Failed to fetch account info:', error)
+      setError('Unable to load connected accounts.')
+    } finally {
+      setAccountsLoading(false)
     }
   }
 
@@ -260,16 +273,16 @@ export default function ProfilePage() {
     setPasswordErrors((prev) => ({ ...prev, [field]: error }))
   }
 
-  if (status === 'loading') {
+  if (status === 'loading' || (userLoading && !profile)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0] flex items-center justify-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center gap-4"
         >
           <div className="w-12 h-12 border-4 border-[#12B5C9]/30 border-t-[#12B5C9] rounded-full animate-spin" />
-          <p className="text-[#64748B] font-medium">Loading your profile...</p>
+          <p className="text-[#64748B] font-medium">Loading your profile…</p>
         </motion.div>
       </div>
     )
