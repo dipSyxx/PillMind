@@ -36,6 +36,7 @@ import {
   confirmNewPasswordSchema,
 } from '@/lib/validation'
 import { cn } from '@/lib/utils'
+import { signIn } from '@/lib/auth'
 
 type UserPublic = {
   id: string
@@ -182,8 +183,7 @@ export default function ProfilePage() {
     const tips: string[] = []
     if (!profile?.hasPassword) tips.push('Set a login password to avoid losing access if a provider fails.')
     if (!isVerified) tips.push('Verify your email to enable recovery and notifications.')
-    if (providersCount === 0)
-      tips.push('Link at least one OAuth provider (Google / GitHub / Vipps) as a backup method.')
+    if (providersCount === 0) tips.push('Link at least one OAuth provider (Google / GitHub) as a backup method.')
     if (providersCount === 1) tips.push('Add a second provider for redundancy (optional, but recommended).')
     return tips
   }, [profile?.hasPassword, isVerified, providersCount])
@@ -836,6 +836,56 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
+                  {/* Connect buttons (visible only if not connected) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {!accountInfo?.providers.includes('google') && (
+                      <Button
+                        variant="outline"
+                        onClick={() => signIn('google', { callbackUrl: '/profile?linked=google' })}
+                        className="justify-center"
+                      >
+                        {/* простий SVG-лого, або заміни на власний компонент іконки */}
+                        <svg width="18" height="18" viewBox="0 0 533.5 544.3" className="mr-2" aria-hidden>
+                          <path
+                            fill="#4285F4"
+                            d="M533.5 278.4c0-17.4-1.6-34.1-4.6-50.3H272v95.2h146.9c-6.3 34.1-25.3 63-54 82.4v68h87.3c51.1-47 81.3-116.2 81.3-195.3z"
+                          />
+                          <path
+                            fill="#34A853"
+                            d="M272 544.3c73.1 0 134.3-24.1 179.1-65.5l-87.3-68c-24.2 16.4-55 26-91.8 26-70.6 0-130.4-47.7-151.8-111.8H29.9v70.2c44.6 88.3 136.2 148.9 242.1 148.9z"
+                          />
+                          <path
+                            fill="#FBBC05"
+                            d="M120.2 325c-10.9-32.6-10.9-67.5 0-100.1V154.7H29.9c-21.7 43.4-34.1 92.5-34.1 144.9s12.4 101.5 34.1 144.9l90.3-70.2z"
+                          />
+                          <path
+                            fill="#EA4335"
+                            d="M272 107.7c39.8-.6 77.9 14 106.9 40.9l80-80C410.9 25.5 345.1.7 272 1 166.1 1 74.5 61.7 29.9 150l90.3 70.2C141.6 155.9 201.4 108.2 272 107.7z"
+                          />
+                        </svg>
+                        Connect Google
+                      </Button>
+                    )}
+
+                    {!accountInfo?.providers.includes('github') && (
+                      <Button
+                        variant="outline"
+                        onClick={() => signIn('github', { callbackUrl: '/profile?linked=github' })}
+                        className="justify-center"
+                      >
+                        {/* простий GitHub-лого */}
+                        <svg width="18" height="18" viewBox="0 0 16 16" className="mr-2" aria-hidden>
+                          <path
+                            fill="currentColor"
+                            d="M8 0C3.58 0 0 3.68 0 8.22c0 3.63 2.29 6.71 5.47 7.79c.4.08.55-.18.55-.39c0-.19-.01-.82-.01-1.49c-2.01.37-2.53-.5-2.69-.96c-.09-.24-.48-.96-.82-1.15c-.28-.15-.68-.52-.01-.53c.63-.01 1.08.6 1.23.85c.72 1.21 1.87.87 2.33.66c.07-.54.28-.87.51-1.07c-1.78-.2-3.64-.93-3.64-4.15c0-.92.32-1.67.84-2.26c-.08-.2-.36-1.01.08-2.1c0 0 .67-.22 2.2.86c.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.09 2.2-.86 2.2-.86c.44 1.09.16 1.9.08 2.1c.52.59.84 1.34.84 2.26c0 3.23-1.87 3.95-3.65 4.15c.29.26.54.77.54 1.55c0 1.12-.01 2.02-.01 2.29c0 .21.15.47.55.39A8.04 8.04 0 0 0 16 8.22C16 3.68 12.42 0 8 0z"
+                          />
+                        </svg>
+                        Connect GitHub
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Existing linked methods */}
                   <div className="space-y-4">
                     {accountInfo?.hasPassword && (
                       <div className="group p-4 bg-white border border-[#E2E8F0] rounded-[12px] hover:border-[#0EA8BC]/30 hover:shadow-sm transition-all duration-200">
@@ -856,45 +906,50 @@ export default function ProfilePage() {
                       </div>
                     )}
 
-                    {accountInfo?.providers.map((provider) => (
-                      <div
-                        key={provider}
-                        className="group p-4 bg-white border border-[#E2E8F0] rounded-[12px] hover:border-[#0EA8BC]/30 hover:shadow-sm transition-all duration-200"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-[#0EA8BC]/10 rounded-[8px] flex items-center justify-center">
-                              <ExternalLink className="w-5 h-5 text-[#0EA8BC]" />
+                    {accountInfo?.providers.map((provider) => {
+                      const onlyOneMethodLeft = !accountInfo.hasPassword && (accountInfo.providers?.length ?? 0) <= 1
+                      return (
+                        <div
+                          key={provider}
+                          className="group p-4 bg-white border border-[#E2E8F0] rounded-[12px] hover:border-[#0EA8BC]/30 hover:shadow-sm transition-all duration-200"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-[#0EA8BC]/10 rounded-[8px] flex items-center justify-center">
+                                <ExternalLink className="w-5 h-5 text-[#0EA8BC]" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-[#0F172A] capitalize">{provider}</p>
+                                <p className="text-sm text-[#64748B]">Sign in with {provider}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-[#0F172A] capitalize">{provider}</p>
-                              <p className="text-sm text-[#64748B]">Sign in with {provider}</p>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+                                Connected
+                              </span>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleUnlinkAccount(provider)}
+                                disabled={onlyOneMethodLeft}
+                                title={onlyOneMethodLeft ? 'You must keep at least one sign-in method' : 'Unlink'}
+                                className={onlyOneMethodLeft ? 'opacity-50 cursor-not-allowed' : ''}
+                              >
+                                Unlink
+                              </Button>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-full">
-                              Connected
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleUnlinkAccount(provider)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              Unlink
-                            </Button>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
 
                     {accountInfo && !accountInfo.hasPassword && accountInfo.providers.length === 0 && (
                       <div className="text-center py-12 text-[#64748B]">
                         <div className="w-16 h-16 bg-[#CBD5E1]/20 rounded-[16px] flex items-center justify-center mx-auto mb-4">
                           <ExternalLink className="w-8 h-8 text-[#CBD5E1]" />
                         </div>
-                        <p className="font-medium">No connected accounts found</p>
-                        <p className="text-sm">Connect an account to get started</p>
+                        <p className="font-medium">No connected accounts yet</p>
+                        <p className="text-sm">Use the buttons above to connect Google or GitHub</p>
                       </div>
                     )}
                   </div>
