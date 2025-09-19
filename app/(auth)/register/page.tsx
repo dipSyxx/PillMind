@@ -15,6 +15,7 @@ import {
   confirmPasswordSchema,
 } from '@/lib/validation'
 import { cn } from '@/lib/utils'
+import SocialButtons from '@/components/ui/socials-buttons'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -276,6 +277,14 @@ export default function RegisterPage() {
               )}
             </Button>
           </motion.form>
+
+          <div className="flex items-center my-6">
+            <div className="h-px bg-slate-200 flex-1" />
+            <span className="px-3 text-xs uppercase tracking-widest text-slate-400">or</span>
+            <div className="h-px bg-slate-200 flex-1" />
+          </div>
+
+          <SocialButtons callbackUrl="/" />
 
           {/* Footer */}
           <motion.div

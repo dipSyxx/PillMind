@@ -6,6 +6,7 @@ import { Eye, EyeOff, Mail, Lock, AlertCircle } from 'lucide-react'
 import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import SocialButtons from '@/components/ui/socials-buttons'
 
 type Props = { message?: string | null }
 
@@ -141,6 +142,14 @@ export default function LoginClient({ message }: Props) {
               )}
             </Button>
           </motion.form>
+
+          <div className="flex items-center my-6">
+            <div className="h-px bg-slate-200 flex-1" />
+            <span className="px-3 text-xs uppercase tracking-widest text-slate-400">or</span>
+            <div className="h-px bg-slate-200 flex-1" />
+          </div>
+
+          <SocialButtons callbackUrl="/" />
 
           {/* Footer */}
           <motion.div
