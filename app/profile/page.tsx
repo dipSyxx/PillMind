@@ -993,7 +993,7 @@ export default function ProfilePage() {
                                   size="sm"
                                   onClick={handleDeleteAccount}
                                   disabled={deleteConfirm !== 'DELETE'}
-                                  className="bg-red-600 hover:bg-red-700 disabled:bg-red-300"
+                                  className="text-white bg-red-600 hover:bg-red-700 disabled:bg-red-300"
                                 >
                                   <Trash2 className="w-4 h-4 mr-2" />
                                   Confirm Delete
