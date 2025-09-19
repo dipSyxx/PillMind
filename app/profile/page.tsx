@@ -81,7 +81,6 @@ export default function ProfilePage() {
 
   const [userLoading, setUserLoading] = useState(true)
   const [accountsLoading, setAccountsLoading] = useState(true)
-  const isFetchingEnd = !userLoading || !accountsLoading
 
   // Password change
   const [passwordData, setPasswordData] = useState({
@@ -108,9 +107,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (status === 'authenticated') {
-      void Promise.all([fetchUser(), fetchAccountInfo()])
+      void fetchUser()
+      void fetchAccountInfo()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status])
 
   const fetchUser = async () => {
@@ -273,7 +272,7 @@ export default function ProfilePage() {
     setPasswordErrors((prev) => ({ ...prev, [field]: error }))
   }
 
-  if (isFetchingEnd) {
+  if (status === 'loading' || (userLoading && !profile)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0] flex items-center justify-center">
         <motion.div
