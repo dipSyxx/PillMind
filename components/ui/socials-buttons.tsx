@@ -30,7 +30,7 @@ export default function SocialButtons({ callbackUrl = '/', size = 'lg' }: Props)
         {loading === 'google' ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
-          <Image src="/google.svg" alt="Google" width={16} height={16} className="mr-2" />
+          <Image src="/images/icons8-google.svg" alt="Google" width={16} height={16} className="mr-2" />
         )}
         Continue with Google
       </Button>
