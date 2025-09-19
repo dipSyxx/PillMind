@@ -37,8 +37,19 @@ import {
   confirmNewPasswordSchema,
 } from '@/lib/validation'
 import { cn } from '@/lib/utils'
-import { AuthProvider } from '@/components/providers/session-provider'
 
+type UserPublic = {
+  id: string
+  name: string | null
+  email: string | null
+  emailVerified: string | null
+  image: string | null
+  createdAt: string
+  updatedAt: string
+  hasPassword: boolean
+}
+
+// Заміни твій UserProfile інтерфейс на:
 interface UserProfile {
   id: string
   name: string | null
@@ -46,6 +57,8 @@ interface UserProfile {
   image: string | null
   createdAt: string
   updatedAt: string
+  emailVerified: string | null
+  hasPassword: boolean
 }
 
 interface AccountInfo {
@@ -90,22 +103,37 @@ export default function ProfilePage() {
   }, [status, router])
 
   useEffect(() => {
-    if (session?.user) {
-      setProfile({
-        id: (session.user as any).id || '',
-        name: session.user.name || null,
-        email: session.user.email || null,
-        image: session.user.image || null,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      fetchAccountInfo()
+    if (status === 'authenticated') {
+      void Promise.all([fetchUser(), fetchAccountInfo()])
     }
-  }, [session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status])
+
+  const fetchUser = async () => {
+    try {
+      const res = await fetch('/api/profile/user', { cache: 'no-store' })
+      if (!res.ok) {
+        throw new Error('Failed to load user')
+      }
+      const data: UserPublic = await res.json()
+      setProfile({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        image: data.image,
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
+        emailVerified: data.emailVerified,
+        hasPassword: data.hasPassword,
+      })
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   const fetchAccountInfo = async () => {
     try {
-      const res = await fetch('/api/profile/accounts')
+      const res = await fetch('/api/profile/accounts', { cache: 'no-store' })
       const data = await res.json()
       setAccountInfo(data)
     } catch (error) {
