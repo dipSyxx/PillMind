@@ -1,4 +1,5 @@
 'use client'
+
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -16,6 +17,7 @@ import {
 } from '@/lib/validation'
 import { cn } from '@/lib/utils'
 import SocialButtons from '@/components/ui/socials-buttons'
+import VerifyCodeModal from '@/components/shared/verify-code-modal'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -31,12 +33,14 @@ export default function RegisterPage() {
   })
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
+  // Modal state
+  const [codeModalOpen, setCodeModalOpen] = useState(false)
+  const [sendingCode, setSendingCode] = useState(false)
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
-    // Clear field error when user starts typing
-    if (fieldErrors[field]) {
-      setFieldErrors((prev) => ({ ...prev, [field]: '' }))
-    }
+    if (fieldErrors[field]) setFieldErrors((prev) => ({ ...prev, [field]: '' }))
+    if (error) setError(null)
   }
 
   const validateField = (field: string, value: string) => {
@@ -47,11 +51,8 @@ export default function RegisterPage() {
         password: passwordSchema,
         confirmPassword: confirmPasswordSchema,
       }
-
       const fieldSchema = fieldSchemas[field as keyof typeof fieldSchemas]
-      if (fieldSchema) {
-        fieldSchema.parse(value)
-      }
+      if (fieldSchema) fieldSchema.parse(value)
       return ''
     } catch (error: any) {
       return error.errors[0]?.message || 'Invalid input'
@@ -64,55 +65,86 @@ export default function RegisterPage() {
     setFieldErrors((prev) => ({ ...prev, [field]: error }))
   }
 
+  // Step 1: form validation + code submission + modal opening
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError(null)
-    setLoading(true)
 
+    // 1) Form validation
     try {
-      // Validate entire form
-      const validatedData = registerSchema.parse(formData)
+      registerSchema.parse(formData)
+    } catch (error: any) {
+      const errors: Record<string, string> = {}
+      error?.errors?.forEach((err: any) => {
+        if (err.path?.[0]) errors[err.path[0]] = err.message
+      })
+      setFieldErrors(errors)
+      setError('Please fix the errors below and try again.')
+      return
+    }
 
+    // 2) Sending the code
+    setSendingCode(true)
+    try {
+      const resp = await fetch('/api/verify/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, name: formData.name }),
+      })
+      const data = await resp.json()
+      if (!resp.ok) {
+        throw new Error(data?.error || 'Failed to send verification code')
+      }
+      // 3) Open a pop-up to enter the code
+      setCodeModalOpen(true)
+    } catch (err: any) {
+      setError(err?.message || 'Failed to send verification code')
+    } finally {
+      setSendingCode(false)
+    }
+  }
+
+  // Step 2: user enters code → final registration
+  const completeRegistration = async (code: string) => {
+    setLoading(true)
+    try {
       const res = await fetch('/api/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: validatedData.name,
-          email: validatedData.email,
-          password: validatedData.password,
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          code,
         }),
       })
-
-      if (res.ok) {
-        router.push('/login?message=Registration successful! Please sign in.')
-      } else {
-        const errorData = await res.json()
-        setError(errorData.error || 'Registration failed. Please try again.')
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data?.error || 'Registration failed. Please try again.')
       }
-    } catch (error: any) {
-      if (error.errors) {
-        // Zod validation errors
-        const errors: Record<string, string> = {}
-        error.errors.forEach((err: any) => {
-          if (err.path[0]) {
-            errors[err.path[0]] = err.message
-          }
-        })
-        setFieldErrors(errors)
-        setError('Please fix the errors below and try again.')
-      } else {
-        setError('An unexpected error occurred. Please try again.')
-      }
+      setCodeModalOpen(false)
+      router.push('/login?message=Registration successful! Please sign in.')
+    } catch (err: any) {
+      // The error is shown in the modal via throw
+      throw err
     } finally {
       setLoading(false)
     }
   }
 
+  const resendCode = async () => {
+    const resp = await fetch('/api/verify/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: formData.email, name: formData.name }),
+    })
+    const data = await resp.json()
+    if (!resp.ok) throw new Error(data?.error || 'Failed to resend verification code')
+  }
+
   const passwordStrength = calculatePasswordStrength(formData.password)
   const isFormValid =
-    Object.values(fieldErrors).every((error) => !error) &&
+    Object.values(fieldErrors).every((e) => !e) &&
     formData.name &&
     formData.email &&
     formData.password &&
@@ -149,7 +181,6 @@ export default function RegisterPage() {
             onSubmit={handleSubmit}
             className="space-y-6"
           >
-            {/* Name Field */}
             <Input
               label="Full Name"
               name="name"
@@ -163,7 +194,6 @@ export default function RegisterPage() {
               helperText="Use your real name for better experience"
             />
 
-            {/* Email Field */}
             <Input
               label="Email Address"
               name="email"
@@ -177,7 +207,6 @@ export default function RegisterPage() {
               helperText="We'll use this to send you important updates"
             />
 
-            {/* Password Field */}
             <div className="space-y-2">
               <Input
                 label="Password"
@@ -202,7 +231,6 @@ export default function RegisterPage() {
               {formData.password && <PasswordStrength password={formData.password} />}
             </div>
 
-            {/* Confirm Password Field */}
             <Input
               label="Confirm Password"
               name="confirmPassword"
@@ -224,7 +252,6 @@ export default function RegisterPage() {
               }
             />
 
-            {/* Password Requirements */}
             <div className="space-y-2">
               <p className="text-sm font-medium text-[#334155]">Password must contain:</p>
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -238,22 +265,19 @@ export default function RegisterPage() {
                     text: 'Passwords match',
                     check: formData.password === formData.confirmPassword && formData.confirmPassword,
                   },
-                ].map((requirement, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    {requirement.check ? (
+                ].map((req, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    {req.check ? (
                       <CheckCircle className="w-3 h-3 text-green-500" />
                     ) : (
                       <AlertCircle className="w-3 h-3 text-[#CBD5E1]" />
                     )}
-                    <span className={cn('text-[#64748B]', requirement.check && 'text-green-600')}>
-                      {requirement.text}
-                    </span>
+                    <span className={cn('text-[#64748B]', req.check && 'text-green-600')}>{req.text}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Error Message */}
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -265,12 +289,17 @@ export default function RegisterPage() {
               </motion.div>
             )}
 
-            {/* Submit Button */}
-            <Button type="submit" variant="pillmind" size="lg" disabled={loading || !isFormValid} className="w-full">
-              {loading ? (
+            <Button
+              type="submit"
+              variant="pillmind"
+              size="lg"
+              disabled={sendingCode || !isFormValid}
+              className="w-full"
+            >
+              {sendingCode ? (
                 <div className="flex items-center gap-2">
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Creating account...
+                  Sending code…
                 </div>
               ) : (
                 'Create account'
@@ -286,7 +315,6 @@ export default function RegisterPage() {
 
           <SocialButtons callbackUrl="/" />
 
-          {/* Footer */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -302,6 +330,17 @@ export default function RegisterPage() {
           </motion.div>
         </div>
       </motion.div>
+
+      {/* POPUP */}
+      <VerifyCodeModal
+        open={codeModalOpen}
+        onClose={() => setCodeModalOpen(false)}
+        email={formData.email}
+        name={formData.name}
+        onSubmitCode={completeRegistration}
+        onResend={resendCode}
+        initialSeconds={60}
+      />
     </div>
   )
 }
