@@ -5,7 +5,6 @@ import bcrypt from 'bcryptjs'
 const MAILEROO_API_URL = 'https://smtp.maileroo.com/api/v2/emails/template'
 
 function generateCode(): string {
-  // 6-digit code, with leading zeros
   const n = Math.floor(Math.random() * 1_000_000)
   return n.toString().padStart(6, '0')
 }
@@ -13,67 +12,57 @@ function generateCode(): string {
 export async function POST(req: NextRequest) {
   try {
     const { email, name } = (await req.json()) as { email?: string; name?: string }
+    if (!email) return NextResponse.json({ error: 'Email is required' }, { status: 400 })
 
-    if (!email) {
-      return NextResponse.json({ error: 'Email is required' }, { status: 400 })
+    // --- safety checks for envs
+    if (!process.env.MAILEROO_API_KEY || !process.env.MAILEROO_FROM) {
+      return NextResponse.json({ error: 'Mail sending is not configured' }, { status: 500 })
     }
 
-    // 1) generate code and TTL
+    // 1) generate code + expiry
     const code = generateCode()
     const ttlMinutes = Number(process.env.VERIFY_CODE_TTL_MINUTES ?? '10')
     const expires = new Date(Date.now() + ttlMinutes * 60 * 1000)
 
-    // 2) save the hash code as VerificationToken
+    // 2) store hash of the code
     const tokenHash = await bcrypt.hash(code, 12)
-    // при повторному запиті — почистити попередні токени цього email
     await prisma.verificationToken.deleteMany({ where: { identifier: email } })
     await prisma.verificationToken.create({
-      data: {
-        identifier: email,
-        token: tokenHash,
-        expires,
-      },
+      data: { identifier: email, token: tokenHash, expires },
     })
 
-    // 3) send an email via Maileroo "Send Templated Email"
-    //    https://maileroo.com/docs/email-api/send-templated-email
+    // 3) send templated email (Maileroo v2)
     const templateId = Number(process.env.MAILEROO_TEMPLATE_VERIFY_ID ?? '3431')
     const res = await fetch(MAILEROO_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // Maileroo Authentication: Authorization: Bearer <SENDING_KEY>
-        // Also possible X-Api-Key: <SENDING_KEY> (both methods are valid)
         Authorization: `Bearer ${process.env.MAILEROO_API_KEY}`,
       },
       body: JSON.stringify({
         template_id: templateId,
         subject: 'Your PillMind verification code',
         from: {
-          email: process.env.MAILEROO_FROM,
-          name: process.env.MAILEROO_FROM_NAME ?? 'PillMind',
+          address: process.env.MAILEROO_FROM, // e.g. 'no-reply@yourdomain.com'
+          display_name: process.env.MAILEROO_FROM_NAME ?? 'PillMind',
         },
         to: [
           {
-            email,
-            name: name ?? undefined,
+            address: email,
+            display_name: name ?? undefined,
           },
         ],
         variables: {
-          // matching placeholders in your template:
-          // {{code}}, {{expiryMinutes}}, {{name}}, {{year}}
-          code,
-          expiryMinutes: ttlMinutes,
-          name: name || 'there',
-          year: new Date().getFullYear(),
+          code, // {{code}}
+          expiryMinutes: ttlMinutes, // {{expiryMinutes}}
+          name: name || 'there', // {{name}}
+          year: new Date().getFullYear(), // {{year}}
         },
       }),
     })
 
-    // Maileroo returns JSON with status success/message according to the documentation. :contentReference[oaicite:2]{index=2}
     const json = await res.json().catch(() => ({}))
     if (!res.ok || json?.success === false) {
-      // on error — remove the token so that there is no "hanging" code left
       await prisma.verificationToken.deleteMany({ where: { identifier: email } })
       return NextResponse.json(
         { error: json?.message || 'Failed to send verification email' },
