@@ -484,9 +484,9 @@ function ColorSwatch({ swatch }: { swatch: Swatch }) {
     <Button
       onClick={handleCopy}
       variant="outline"
-      className="group relative rounded-lg text-left shadow-card transition hover:-translate-y-0.5 h-auto p-0"
+      className="group relative overflow-hidden rounded-lg text-left shadow-card transition hover:-translate-y-0.5 h-auto p-0"
     >
-      <div className="h-16 rounded-t-lg" style={{ backgroundColor: swatch.hex }} />
+      <div className="w-5 absolute left-0 top-0 h-16 " style={{ backgroundColor: swatch.hex }} />
       <div className="p-3">
         <p className="text-sm font-medium text-[#0F172A]">{swatch.name}</p>
         <p className="text-xs text-[#64748B]">{swatch.hex}</p>
