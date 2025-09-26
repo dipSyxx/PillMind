@@ -8,18 +8,36 @@ datasource db {
   directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
+/**
+ * =========================
+ * AUTH BASE MODELS
+ * =========================
+ */
+
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  // manual login
   passwordHash  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // OAuth
   accounts Account[]
+
+  // Profile / settings
+  settings UserSettings?
+
+  // Medicine
+  prescriptions Prescription[]
+  medications   Medication[] // user’s private catalog (in addition to prescriptions)
+
+  // Logs / notifications
+  reminderLogs NotificationLog[]
+
+  careProviders CareProvider[]
 }
 
 model Account {
@@ -47,4 +65,260 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+/**
+ * =========================
+ * ENUMS & CATALOGS
+ * =========================
+ */
+
+enum Weekday {
+  MON
+  TUE
+  WED
+  THU
+  FRI
+  SAT
+  SUN
+}
+
+enum MedForm {
+  TABLET
+  CAPSULE
+  LIQUID
+  INJECTION
+  INHALER
+  TOPICAL
+  DROPS
+  OTHER
+}
+
+enum Route {
+  ORAL
+  SUBLINGUAL
+  INHALATION
+  TOPICAL
+  INJECTION
+  OPHTHALMIC
+  NASAL
+  RECTAL
+  OTHER
+}
+
+enum Unit {
+  MG
+  MCG
+  G
+  ML
+  IU
+  DROP
+  PUFF
+  UNIT
+  TAB // tablet as a unit
+  CAPS // capsule
+}
+
+enum DoseStatus {
+  SCHEDULED
+  TAKEN
+  SKIPPED
+  MISSED
+}
+
+enum Channel {
+  PUSH
+  EMAIL
+  SMS
+}
+
+enum NotifyStatus {
+  SENT
+  DELIVERED
+  FAILED
+}
+
+/**
+ * time format for UI/notifications
+ */
+enum TimeFormat {
+  H12 // 12-hour (AM/PM)
+  H24 // 24-hour
+}
+
+/**
+ * =========================
+ * USER SETTINGS
+ * =========================
+ */
+
+model UserSettings {
+  userId          String     @id
+  timezone        String // IANA, e.g., "Europe/Oslo"
+  timeFormat      TimeFormat @default(H24) // 12/24-hour across UI/emails
+  defaultChannels Channel[] // default notification channels
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+/**
+ * =========================
+ * MEDICATIONS, PRESCRIPTIONS, SCHEDULES
+ * =========================
+ */
+
+// User’s medication catalog (not necessarily tied to a prescription)
+model Medication {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String // name
+  brandName     String?
+  form          MedForm
+  strengthValue Decimal? // e.g., 500
+  strengthUnit  Unit? // e.g., MG
+  route         Route? // administration route
+  notes         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  inventory     Inventory?
+  prescriptions Prescription[] // one medication can be used in multiple prescriptions
+
+  @@index([userId])
+}
+
+// Doctor / care provider (optional)
+model CareProvider {
+  id     String  @id @default(cuid())
+  userId String // record owner (patient)
+  name   String
+  email  String?
+  phone  String?
+  clinic String?
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prescriptions Prescription[]
+
+  @@index([userId])
+}
+
+// A prescription for a specific medication
+model Prescription {
+  id           String    @id @default(cuid())
+  userId       String
+  medicationId String
+  providerId   String? // who prescribed (if provided)
+  indication   String? // purpose
+  asNeeded     Boolean   @default(false) // PRN
+  maxDailyDose Decimal? // daily limit if needed
+  instructions String? // free-text instructions
+  startDate    DateTime
+  endDate      DateTime? // optional end date
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medication Medication    @relation(fields: [medicationId], references: [id], onDelete: Restrict)
+  provider   CareProvider? @relation(fields: [providerId], references: [id], onDelete: SetNull)
+
+  schedules Schedule[] // one or more dosing schedules
+  doseLogs  DoseLog[] // actual dose events/logs
+
+  @@index([userId])
+  @@index([medicationId])
+  @@index([providerId])
+}
+
+// Key: dosing schedule (weekdays + times of day)
+model Schedule {
+  id             String    @id @default(cuid())
+  prescriptionId String
+  timezone       String // IANA, e.g., "Europe/Oslo"
+  daysOfWeek     Weekday[] // Postgres array of weekdays
+  // time slots as "HH:mm" (24h), e.g., ["08:00","15:00","22:00"]
+  times          String[]
+  // default amount per intake (can be overridden in DoseLog)
+  doseQuantity   Decimal?
+  doseUnit       Unit?
+
+  startDate DateTime? // optional active period limits
+  endDate   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  doseLogs     DoseLog[] // generated/recorded dose events
+
+  @@index([prescriptionId])
+}
+
+/**
+ * =========================
+ * DOSE LOGS & INVENTORY
+ * =========================
+ */
+
+// Records a scheduled/actual dose event
+model DoseLog {
+  id             String     @id @default(cuid())
+  prescriptionId String
+  scheduleId     String?
+  // planned time (respecting user’s timezone)
+  scheduledFor   DateTime
+  // actual taken time (if taken)
+  takenAt        DateTime?
+  status         DoseStatus @default(SCHEDULED)
+  // actual quantity if different from Schedule.doseQuantity
+  quantity       Decimal?
+  unit           Unit?
+  notes          String?
+
+  createdAt DateTime @default(now())
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  schedule     Schedule?    @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  notifications NotificationLog[] // multiple notification attempts per dose
+
+  @@index([prescriptionId])
+  @@index([scheduleId])
+  @@index([scheduledFor])
+}
+
+// Stock tracking / low-stock threshold
+model Inventory {
+  id              String    @id @default(cuid())
+  medicationId    String    @unique
+  currentQty      Decimal   @default(0)
+  unit            Unit
+  lowThreshold    Decimal? // when to alert user
+  lastRestockedAt DateTime?
+
+  medication Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+}
+
+/**
+ * =========================
+ * NOTIFICATIONS
+ * =========================
+ */
+
+model NotificationLog {
+  id        String       @id @default(cuid())
+  userId    String
+  doseLogId String?
+  channel   Channel
+  status    NotifyStatus
+  sentAt    DateTime     @default(now())
+  meta      Json?
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doseLog DoseLog? @relation(fields: [doseLogId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([doseLogId])
 }
