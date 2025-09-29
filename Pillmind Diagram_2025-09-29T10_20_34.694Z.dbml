@@ -1,0 +1,302 @@
+enum Weekday {
+	MON
+	TUE
+	WED
+	THU
+	FRI
+	SAT
+	SUN
+}
+
+
+
+enum MedForm {
+	TABLET
+	CAPSULE
+	LIQUID
+	INJECTION
+	INHALER
+	TOPICAL
+	DROPS
+	OTHER
+}
+
+
+
+enum Route {
+	ORAL
+	SUBLINGUAL
+	INHALATION
+	TOPICAL
+	INJECTION
+	OPHTHALMIC
+	NASAL
+	RECTAL
+	OTHER
+}
+
+
+
+enum Unit {
+	MG
+	MCG
+	G
+	ML
+	IU
+	DROP
+	PUFF
+	UNIT
+	TAB
+	CAPS
+}
+
+
+
+enum DoseStatus {
+	SCHEDULED
+	TAKEN
+	SKIPPED
+	MISSED
+}
+
+
+
+enum Channel {
+	PUSH
+	EMAIL
+	SMS
+}
+
+
+
+enum NotifyStatus {
+	SENT
+	DELIVERED
+	FAILED
+}
+
+
+
+enum TimeFormat {
+	H12
+	H24
+}
+
+Table User [headercolor: #175e7a] {
+	id varchar [ pk, not null, unique ]
+	name varchar
+	email varchar
+	emailVerified datetime
+	image varchar
+	passwordHash varchar
+	createdAt datetime [ not null, note: 'default now() in Prisma' ]
+	updatedAt datetime [ not null, note: '@updatedAt in Prisma' ]
+
+	Note: 'Root user. Relations: accounts, settings, prescriptions, medications, reminderLogs, careProviders'
+}
+
+Table Account [headercolor: #175e7a] {
+	id varchar [ pk, not null, unique ]
+	userId varchar [ not null ]
+	type varchar [ not null ]
+	provider varchar [ not null ]
+	providerAccountId varchar [ not null ]
+	refresh_token varchar
+	access_token varchar
+	expires_at int
+	token_type varchar
+	scope varchar
+	id_token varchar
+	session_state varchar
+
+	indexes {
+		(provider, providerAccountId) [ name: 'Account_index_0', unique ]
+		(userId) [ name: 'Account_index_1' ]
+	}
+}
+
+Table VerificationToken [headercolor: #175e7a] {
+	identifier varchar [ not null ]
+	token varchar [ not null ]
+	expires datetime [ not null ]
+
+	indexes {
+		(identifier, token) [ name: 'VerificationToken_index_2', unique ]
+	}
+}
+
+Table UserSettings [headercolor: #175e7a] {
+	userId varchar [ pk, not null, unique ]
+	timezone varchar [ not null ]
+	timeFormat timeformat [ not null, default: H24 ]
+	defaultChannels varchar[] [ not null, note: 'Channel[] in Prisma' ]
+
+	Note: 'One-to-one with User'
+}
+
+Table Medication [headercolor: #175e7a] {
+	id varchar [ pk, not null, unique ]
+	userId varchar [ not null ]
+	name varchar [ not null ]
+	brandName varchar
+	form medform [ not null ]
+	strengthValue decimal
+	strengthUnit unit
+	route route
+	notes text
+	createdAt datetime [ not null, note: 'default now()' ]
+	updatedAt datetime [ not null, note: '@updatedAt' ]
+
+	indexes {
+		(userId) [ name: 'Medication_index_3' ]
+	}
+
+	Note: 'User’s private catalog item. One-to-one Inventory; may be used by multiple Prescriptions.'
+}
+
+Table CareProvider [headercolor: #175e7a] {
+	id varchar [ pk, not null, unique ]
+	userId varchar [ not null ]
+	name varchar [ not null ]
+	email varchar
+	phone varchar
+	clinic varchar
+
+	indexes {
+		(userId) [ name: 'CareProvider_index_4' ]
+	}
+}
+
+Table Prescription [headercolor: #175e7a] {
+	id varchar [ pk, not null, unique ]
+	userId varchar [ not null ]
+	medicationId varchar [ not null ]
+	providerId varchar
+	indication text
+	asNeeded boolean [ not null, default: false ]
+	maxDailyDose decimal
+	instructions text
+	startDate datetime [ not null ]
+	endDate datetime
+	createdAt datetime [ not null, note: 'default now()' ]
+	updatedAt datetime [ not null, note: '@updatedAt' ]
+
+	indexes {
+		(userId) [ name: 'Prescription_index_5' ]
+		(medicationId) [ name: 'Prescription_index_6' ]
+		(providerId) [ name: 'Prescription_index_7' ]
+	}
+}
+
+Table Schedule [headercolor: #175e7a] {
+	id varchar [ pk, not null, unique ]
+	prescriptionId varchar [ not null ]
+	timezone varchar [ not null ]
+	daysOfWeek varchar[] [ not null, note: 'Weekday[] in Prisma' ]
+	times varchar[] [ not null, note: 'HH:mm strings' ]
+	doseQuantity decimal
+	doseUnit unit
+	startDate datetime
+	endDate datetime
+	createdAt datetime [ not null, note: 'default now()' ]
+	updatedAt datetime [ not null, note: '@updatedAt' ]
+
+	indexes {
+		(prescriptionId) [ name: 'Schedule_index_8' ]
+	}
+}
+
+Table DoseLog [headercolor: #175e7a] {
+	id varchar [ pk, not null, unique ]
+	prescriptionId varchar [ not null ]
+	scheduleId varchar
+	scheduledFor datetime [ not null ]
+	takenAt datetime
+	status dosestatus [ not null, default: SCHEDULED ]
+	quantity decimal
+	unit unit
+	notes text
+	createdAt datetime [ not null, note: 'default now()' ]
+
+	indexes {
+		(prescriptionId) [ name: 'DoseLog_index_9' ]
+		(scheduleId) [ name: 'DoseLog_index_10' ]
+		(scheduledFor) [ name: 'DoseLog_index_11' ]
+	}
+}
+
+Table Inventory [headercolor: #175e7a] {
+	id varchar [ pk, not null, unique ]
+	medicationId varchar [ not null ]
+	currentQty decimal [ not null ]
+	unit unit [ not null ]
+	lowThreshold decimal
+	lastRestockedAt datetime
+}
+
+Table NotificationLog [headercolor: #175e7a] {
+	id varchar [ pk, not null, unique ]
+	userId varchar [ not null ]
+	doseLogId varchar
+	channel channel [ not null ]
+	status notifystatus [ not null ]
+	sentAt datetime [ not null, note: 'default now()' ]
+	meta json
+
+	indexes {
+		(userId) [ name: 'NotificationLog_index_12' ]
+		(doseLogId) [ name: 'NotificationLog_index_13' ]
+	}
+}
+
+Ref fk_User_id_Account {
+	User.id < Account.userId [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_UserSettings {
+	User.id < UserSettings.userId [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_Medication {
+	User.id < Medication.userId [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_CareProvider {
+	User.id < CareProvider.userId [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_Prescription {
+	User.id < Prescription.userId [ delete: no action, update: no action ]
+}
+
+Ref fk_Medication_id_Prescription {
+	Medication.id < Prescription.medicationId [ delete: no action, update: no action ]
+}
+
+Ref fk_CareProvider_id_Prescription {
+	CareProvider.id < Prescription.providerId [ delete: no action, update: no action ]
+}
+
+Ref fk_Prescription_id_Schedule {
+	Prescription.id < Schedule.prescriptionId [ delete: no action, update: no action ]
+}
+
+Ref fk_Prescription_id_DoseLog {
+	Prescription.id < DoseLog.prescriptionId [ delete: no action, update: no action ]
+}
+
+Ref fk_Schedule_id_DoseLog {
+	Schedule.id < DoseLog.scheduleId [ delete: no action, update: no action ]
+}
+
+Ref fk_Medication_id_Inventory {
+	Medication.id < Inventory.medicationId [ delete: no action, update: no action ]
+}
+
+Ref fk_User_id_NotificationLog {
+	User.id < NotificationLog.userId [ delete: no action, update: no action ]
+}
+
+Ref fk_DoseLog_id_NotificationLog {
+	DoseLog.id < NotificationLog.doseLogId [ delete: no action, update: no action ]
+}

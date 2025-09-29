@@ -18,6 +18,7 @@ import {
 import { cn } from '@/lib/utils'
 import SocialButtons from '@/components/ui/socials-buttons'
 import VerifyCodeModal from '@/components/shared/verify-code-modal'
+import { getClientTimePrefs } from '@/lib/time-prefs'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -104,6 +105,8 @@ export default function RegisterPage() {
     }
   }
 
+  const { timeZone, uses12h } = getClientTimePrefs()
+
   // Step 2: user enters code → final registration
   const completeRegistration = async (code: string) => {
     setLoading(true)
@@ -116,6 +119,8 @@ export default function RegisterPage() {
           email: formData.email,
           password: formData.password,
           code,
+          timezone: timeZone,
+          timeFormat: uses12h ? 'H12' : 'H24',
         }),
       })
       const data = await res.json()

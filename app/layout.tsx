@@ -6,6 +6,7 @@ import { defaultMetadata } from '@/lib/seo'
 import { AuthProvider } from '@/components/providers/session-provider'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import EnsureSettings from '@/components/providers/ensure-settings'
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -26,7 +27,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
       <body className="overflow-x-hidden font-sans">
-        <AuthProvider session={session}>{children}</AuthProvider>
+        <AuthProvider session={session}>
+          <EnsureSettings />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )

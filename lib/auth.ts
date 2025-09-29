@@ -1,4 +1,3 @@
-// lib/auth.ts
 import NextAuth, { type NextAuthOptions } from 'next-auth'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import Credentials from 'next-auth/providers/credentials'
@@ -49,12 +48,17 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, account }) {
-      if (user) token.userId = user.id
+      if (user) {
+        token.sub = user.id
+        token.id = user.id
+      }
       if (account?.provider) token.provider = account.provider
       return token
     },
     async session({ session, token }) {
-      if (token?.userId) (session.user as any).id = token.userId
+      if (session.user && token?.sub) {
+        session.user.id = token.sub
+      }
       return session
     },
   },
