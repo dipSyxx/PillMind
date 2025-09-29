@@ -122,8 +122,15 @@ export default function ProfilePage() {
     if (status === 'authenticated') {
       void fetchUser()
       void fetchAccountInfo()
+      void fetchSettings()
     }
   }, [status])
+
+  useEffect(() => {
+    if (activeTab === 'settings' && !settings && !settingsLoading) {
+      void fetchSettings()
+    }
+  }, [activeTab, settings, settingsLoading])
 
   // ---------- Fetchers ----------
   const fetchUser = async () => {
@@ -397,6 +404,7 @@ export default function ProfilePage() {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'accounts', label: 'Accounts', icon: ExternalLink },
+    { id: 'settings', label: 'Settings', icon: SettingsIcon },
     { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
   ]
 
