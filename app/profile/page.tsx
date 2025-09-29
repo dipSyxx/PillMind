@@ -24,6 +24,7 @@ import {
   ArrowLeft,
   Pill,
   Info,
+  SettingsIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -36,6 +37,16 @@ import {
   confirmNewPasswordSchema,
 } from '@/lib/validation'
 import { cn } from '@/lib/utils'
+
+type TimeFormat = 'H12' | 'H24'
+type Channel = 'PUSH' | 'EMAIL' | 'SMS'
+
+type UserSettings = {
+  userId: string
+  timezone: string
+  timeFormat: TimeFormat
+  defaultChannels: Channel[]
+}
 
 type UserPublic = {
   id: string
@@ -58,7 +69,7 @@ interface AccountInfo {
   hasPassword: boolean
 }
 
-type TabId = 'profile' | 'security' | 'accounts' | 'danger'
+type TabId = 'profile' | 'security' | 'accounts' | 'settings' | 'danger'
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
@@ -94,6 +105,11 @@ export default function ProfilePage() {
   // Danger zone
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+  // === UserSettings state ===
+  const [settingsLoading, setSettingsLoading] = useState(true)
+  const [settingsError, setSettingsError] = useState<string | null>(null)
+  const [settings, setSettings] = useState<UserSettings | null>(null)
 
   // ---------- Guards ----------
   useEffect(() => {
@@ -146,6 +162,21 @@ export default function ProfilePage() {
       setError('Unable to load connected accounts.')
     } finally {
       setAccountsLoading(false)
+    }
+  }
+
+  const fetchSettings = async () => {
+    setSettingsLoading(true)
+    setSettingsError(null)
+    try {
+      const res = await fetch('/api/profile/settings', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to load settings')
+      const data: UserSettings = await res.json()
+      setSettings(data)
+    } catch {
+      setSettingsError('Unable to load settings.')
+    } finally {
+      setSettingsLoading(false)
     }
   }
 
@@ -292,6 +323,45 @@ export default function ProfilePage() {
     setPasswordErrors((er) => ({ ...er, [field]: msg }))
   }
 
+  const saveSettings = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!settings) return
+    setSettingsError(null)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/profile/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          timezone: settings.timezone,
+          timeFormat: settings.timeFormat,
+          defaultChannels: settings.defaultChannels,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data?.error || 'Failed to update settings')
+      }
+      const updated = await res.json()
+      setSettings(updated)
+      setSuccess('Settings updated!')
+    } catch (e: any) {
+      setSettingsError(e?.message || 'Failed to update settings')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const applyBrowserTimezone = () => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone // MDN: resolvedOptions().timeZone
+      if (!tz) throw new Error('Timezone not available')
+      setSettings((s) => (s ? { ...s, timezone: tz } : s))
+    } catch {
+      alert('Unable to detect your timezone in this browser.')
+    }
+  }
+
   // ---------- Global first-render loader ----------
   if (status === 'loading' || (userLoading && !profile)) {
     return (
@@ -329,6 +399,35 @@ export default function ProfilePage() {
     { id: 'accounts', label: 'Accounts', icon: ExternalLink },
     { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
   ]
+
+  const ChannelToggle = ({ value }: { value: Channel }) => {
+    const checked = settings?.defaultChannels.includes(value) ?? false
+    const label = value === 'EMAIL' ? 'Email' : value === 'PUSH' ? 'Push' : 'SMS'
+    return (
+      <label
+        className={cn(
+          'flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition',
+          checked ? 'border-[#0EA8BC] bg-[#0EA8BC]/5' : 'border-slate-200 hover:bg-slate-50',
+        )}
+      >
+        <input
+          type="checkbox"
+          className="accent-[#0EA8BC]"
+          checked={checked}
+          onChange={(e) => {
+            const on = e.target.checked
+            setSettings((s) => {
+              if (!s) return s
+              const set = new Set(s.defaultChannels)
+              on ? set.add(value) : set.delete(value)
+              return { ...s, defaultChannels: Array.from(set) as Channel[] }
+            })
+          }}
+        />
+        <span className="text-sm text-slate-700">{label}</span>
+      </label>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F8FAFC] to-[#E2E8F0]">
@@ -952,6 +1051,130 @@ export default function ProfilePage() {
                       </div>
                     )}
                   </div>
+                </motion.div>
+              )}
+
+              {/* === NEW TAB: SETTINGS === */}
+              {activeTab === 'settings' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-8"
+                >
+                  <div className="bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-[16px] p-6 border border-[#E2E8F0]">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#0EA8BC]/10 rounded-[12px] flex items-center justify-center">
+                        <SettingsIcon className="w-6 h-6 text-[#0EA8BC]" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-bold text-[#0F172A]">User Settings</h2>
+                        <p className="text-[#64748B]">Timezone, time format, and default notification channels</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {settingsLoading ? (
+                    <div className="flex items-center gap-3 text-[#64748B]">
+                      <div className="w-5 h-5 border-2 border-[#12B5C9]/30 border-t-[#12B5C9] rounded-full animate-spin" />
+                      Loading settings…
+                    </div>
+                  ) : settingsError ? (
+                    <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-[12px]">
+                      {settingsError}
+                    </div>
+                  ) : settings ? (
+                    <form onSubmit={saveSettings} className="space-y-6">
+                      {/* Timezone */}
+                      <div className="p-4 bg-white border border-[#E2E8F0] rounded-[12px]">
+                        <label className="block text-sm font-medium text-[#0F172A] mb-2">Timezone (IANA)</label>
+                        <div className="flex gap-2">
+                          <Input
+                            value={settings.timezone}
+                            onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
+                            placeholder="e.g. Europe/Oslo"
+                            className="flex-1"
+                          />
+                          <Button type="button" variant="outline" onClick={applyBrowserTimezone}>
+                            Use my timezone
+                          </Button>
+                        </div>
+                        <p className="mt-1 text-xs text-[#64748B]">Example: Europe/Oslo, America/New_York, Asia/Kyiv</p>
+                      </div>
+
+                      {/* Time format */}
+                      <div className="p-4 bg-white border border-[#E2E8F0] rounded-[12px]">
+                        <label className="block text-sm font-medium text-[#0F172A] mb-2">Time format</label>
+                        <div className="flex items-center gap-3">
+                          <label
+                            className={cn(
+                              'px-3 py-2 rounded-lg border cursor-pointer',
+                              settings.timeFormat === 'H24'
+                                ? 'border-[#0EA8BC] bg-[#0EA8BC]/5'
+                                : 'border-slate-200 hover:bg-slate-50',
+                            )}
+                          >
+                            <input
+                              type="radio"
+                              name="tf"
+                              className="mr-2 accent-[#0EA8BC]"
+                              checked={settings.timeFormat === 'H24'}
+                              onChange={() => setSettings({ ...settings, timeFormat: 'H24' })}
+                            />
+                            24-hour (e.g., 15:00)
+                          </label>
+                          <label
+                            className={cn(
+                              'px-3 py-2 rounded-lg border cursor-pointer',
+                              settings.timeFormat === 'H12'
+                                ? 'border-[#0EA8BC] bg-[#0EA8BC]/5'
+                                : 'border-slate-200 hover:bg-slate-50',
+                            )}
+                          >
+                            <input
+                              type="radio"
+                              name="tf"
+                              className="mr-2 accent-[#0EA8BC]"
+                              checked={settings.timeFormat === 'H12'}
+                              onChange={() => setSettings({ ...settings, timeFormat: 'H12' })}
+                            />
+                            12-hour (e.g., 3:00 PM)
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Default channels */}
+                      <div className="p-4 bg-white border border-[#E2E8F0] rounded-[12px]">
+                        <label className="block text-sm font-medium text-[#0F172A] mb-2">
+                          Default notification channels
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          <ChannelToggle value="EMAIL" />
+                          <ChannelToggle value="PUSH" />
+                          <ChannelToggle value="SMS" />
+                        </div>
+                        <p className="mt-1 text-xs text-[#64748B]">
+                          Used as fallback for reminders unless overridden per prescription.
+                        </p>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <Button type="submit" variant="pillmind" disabled={loading}>
+                          {loading ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Saving…
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Save className="w-4 h-4" />
+                              Save Settings
+                            </div>
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  ) : null}
                 </motion.div>
               )}
 
