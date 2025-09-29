@@ -9,7 +9,7 @@ export function useEnsureSettings() {
   useEffect(() => {
     if (status !== 'authenticated') return
     const { timeZone, uses12h } = getClientTimePrefs()
-    fetch('/api/profile/settings/ensure', {
+    fetch('/api/settings/ensure', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
