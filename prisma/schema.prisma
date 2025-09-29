@@ -24,6 +24,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  // Onboarding fields
+  age               Int?
+  weight            Decimal? // in kg
+  height            Decimal? // in cm
+  sex               Sex?
+  goals             HealthGoal[]
+  medicalConditions MedicalCondition[]
+
   // OAuth
   accounts Account[]
 
@@ -32,7 +40,7 @@ model User {
 
   // Medicine
   prescriptions Prescription[]
-  medications   Medication[] // user’s private catalog (in addition to prescriptions)
+  medications   Medication[] // user's private catalog (in addition to prescriptions)
 
   // Logs / notifications
   reminderLogs NotificationLog[]
@@ -136,6 +144,39 @@ enum NotifyStatus {
   SENT
   DELIVERED
   FAILED
+}
+
+enum Sex {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum HealthGoal {
+  GENERAL_HEALTH
+  WEIGHT_MANAGEMENT
+  CHRONIC_CONDITION_MANAGEMENT
+  PREVENTIVE_CARE
+  FITNESS_PERFORMANCE
+  MENTAL_HEALTH
+  OTHER
+}
+
+enum MedicalCondition {
+  DIABETES
+  HYPERTENSION
+  HEART_DISEASE
+  ASTHMA
+  ARTHRITIS
+  DEPRESSION
+  ANXIETY
+  THYROID_DISORDERS
+  KIDNEY_DISEASE
+  LIVER_DISEASE
+  CANCER
+  AUTOIMMUNE_DISORDERS
+  OTHER
 }
 
 /**
