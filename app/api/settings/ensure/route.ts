@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import prisma from '@/prisma/prisma-client'
+import { getUserIdFromSession } from '@/lib/session'
 
 export const runtime = 'nodejs'
 
@@ -12,16 +13,6 @@ const BodySchema = z
     timeFormat: z.enum(['H12', 'H24']),
   })
   .partial()
-
-async function getUserIdFromSession() {
-  const session = await getServerSession(authOptions)
-  const sessionUserId = (session as any)?.user?.id as string | undefined
-  if (sessionUserId) return sessionUserId
-  const email = session?.user?.email
-  if (!email) return null
-  const user = await prisma.user.findUnique({ where: { email }, select: { id: true } })
-  return user?.id ?? null
-}
 
 export async function POST(req: Request) {
   try {
