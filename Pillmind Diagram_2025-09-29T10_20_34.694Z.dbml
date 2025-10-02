@@ -82,6 +82,56 @@ enum TimeFormat {
 	H24
 }
 
+Enum Sex {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+Enum HealthGoal {
+  GENERAL_HEALTH
+  WEIGHT_MANAGEMENT
+  CHRONIC_CONDITION_MANAGEMENT
+  PREVENTIVE_CARE
+  FITNESS_PERFORMANCE
+  MENTAL_HEALTH
+  OTHER
+}
+
+Enum MedicalCondition {
+  DIABETES
+  HYPERTENSION
+  HEART_DISEASE
+  ASTHMA
+  ARTHRITIS
+  DEPRESSION
+  ANXIETY
+  THYROID_DISORDERS
+  KIDNEY_DISEASE
+  LIVER_DISEASE
+  CANCER
+  AUTOIMMUNE_DISORDERS
+  OTHER
+}
+
+Enum TimeFormat {
+  H12
+  H24
+}
+
+Enum Channel {
+  PUSH
+  EMAIL
+  SMS
+}
+
+Enum NotifyStatus {
+  SENT
+  DELIVERED
+  FAILED
+}
+
 Table User [headercolor: #175e7a] {
 	id varchar [ pk, not null, unique ]
 	name varchar
@@ -91,6 +141,13 @@ Table User [headercolor: #175e7a] {
 	passwordHash varchar
 	createdAt datetime [ not null, note: 'default now() in Prisma' ]
 	updatedAt datetime [ not null, note: '@updatedAt in Prisma' ]
+
+  age               int        [null]
+  weight            numeric    [null, note: 'kg']
+  height            numeric    [null, note: 'cm']
+  sex               Sex        [null]
+  goals             "HealthGoal[]"      [null, note: 'Postgres enum array']
+  medicalConditions "MedicalCondition[]" [null, note: 'Postgres enum array']
 
 	Note: 'Root user. Relations: accounts, settings, prescriptions, medications, reminderLogs, careProviders'
 }
