@@ -4,11 +4,33 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  /* PillMind Brand Colors */
+  --pm-teal-500: #12b5c9;
+  --pm-teal-600: #0ea8bc;
+  --pm-teal-700: #0b95a8;
+  --pm-mint-500: #2ed3b7;
+  --pm-mint-600: #22c3a8;
+  --pm-sky-500: #3ec7e6;
+
+  /* Neutral Colors */
+  --pm-slate-900: #0f172a;
+  --pm-slate-700: #334155;
+  --pm-slate-500: #64748b;
+  --pm-slate-300: #cbd5e1;
+  --pm-slate-100: #f1f5f9;
+  --pm-slate-50: #f8fafc;
+
+  /* Status Colors */
+  --pm-success: #10b981;
+  --pm-warning: #f59e0b;
+  --pm-danger: #ef4444;
+
+  /* UI Colors - Light Mode */
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: var(--pm-teal-600);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -18,8 +40,8 @@
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
+  --border: var(--pm-slate-300);
+  --input: var(--pm-slate-300);
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
@@ -33,21 +55,33 @@
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-border: var(--pm-slate-300);
   --sidebar-ring: oklch(0.708 0 0);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: var(--pm-slate-50);
+  --foreground: var(--pm-slate-900);
+
+  /* PillMind Specific Colors */
+  --pm-gradient-from: var(--pm-teal-500);
+  --pm-gradient-via: var(--pm-mint-500);
+  --pm-gradient-to: var(--pm-sky-500);
+  --pm-text-primary: var(--pm-slate-900);
+  --pm-text-secondary: var(--pm-slate-700);
+  --pm-text-muted: var(--pm-slate-500);
+  --pm-border: var(--pm-slate-300);
+  --pm-surface: oklch(1 0 0);
+  --pm-surface-elevated: var(--pm-slate-100);
 }
 
 .dark {
+  /* Dark Mode Colors */
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: var(--pm-teal-500);
+  --primary-foreground: oklch(0.145 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -72,6 +106,17 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* PillMind Dark Mode Colors */
+  --pm-text-primary: oklch(0.985 0 0);
+  --pm-text-secondary: oklch(0.8 0 0);
+  --pm-text-muted: oklch(0.708 0 0);
+  --pm-border: oklch(1 0 0 / 15%);
+  --pm-surface: oklch(0.205 0 0);
+  --pm-surface-elevated: oklch(0.269 0 0);
+
+  /* Dark mode background override */
+  --background: oklch(0.145 0 0);
 }
 
 @theme inline {
@@ -114,6 +159,29 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* PillMind Brand Colors */
+  --color-pm-teal-500: var(--pm-teal-500);
+  --color-pm-teal-600: var(--pm-teal-600);
+  --color-pm-teal-700: var(--pm-teal-700);
+  --color-pm-mint-500: var(--pm-mint-500);
+  --color-pm-mint-600: var(--pm-mint-600);
+  --color-pm-sky-500: var(--pm-sky-500);
+  --color-pm-slate-900: var(--pm-slate-900);
+  --color-pm-slate-700: var(--pm-slate-700);
+  --color-pm-slate-500: var(--pm-slate-500);
+  --color-pm-slate-300: var(--pm-slate-300);
+  --color-pm-slate-100: var(--pm-slate-100);
+  --color-pm-slate-50: var(--pm-slate-50);
+  --color-pm-success: var(--pm-success);
+  --color-pm-warning: var(--pm-warning);
+  --color-pm-danger: var(--pm-danger);
+  --color-pm-text-primary: var(--pm-text-primary);
+  --color-pm-text-secondary: var(--pm-text-secondary);
+  --color-pm-text-muted: var(--pm-text-muted);
+  --color-pm-border: var(--pm-border);
+  --color-pm-surface: var(--pm-surface);
+  --color-pm-surface-elevated: var(--pm-surface-elevated);
 }
 
 /* Smooth scrolling for anchor links */

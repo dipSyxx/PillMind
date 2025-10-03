@@ -7,7 +7,7 @@ import { Book, QrCode } from 'lucide-react'
 
 export default function PillMindLanding() {
   return (
-    <main className="relative min-h-screen bg-[#F1F5F9] text-[#0F172A]">
+    <main className="relative min-h-screen bg-pm-slate-100 text-pm-slate-900">
       <Header />
       <Hero />
       <Trust />

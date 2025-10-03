@@ -30,6 +30,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PasswordStrength } from '@/components/ui/password-strength'
 import { Container } from '@/components/shared/container'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   changePasswordSchema,
   currentPasswordSchema,
@@ -411,28 +413,31 @@ export default function ProfilePage() {
   const ChannelToggle = ({ value }: { value: Channel }) => {
     const checked = settings?.defaultChannels.includes(value) ?? false
     const label = value === 'EMAIL' ? 'Email' : value === 'PUSH' ? 'Push' : 'SMS'
+    const id = `channel-${value.toLowerCase()}`
+
     return (
       <label
+        htmlFor={id}
         className={cn(
-          'flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition',
-          checked ? 'border-[#0EA8BC] bg-[#0EA8BC]/5' : 'border-slate-200 hover:bg-slate-50',
+          'inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition select-none',
+          checked ? 'border-primary bg-primary/5' : 'border-input hover:bg-muted/50',
         )}
       >
-        <input
-          type="checkbox"
-          className="accent-[#0EA8BC]"
+        <Checkbox
+          id={id}
           checked={checked}
-          onChange={(e) => {
-            const on = e.target.checked
+          onCheckedChange={(on) => {
+            const isOn = !!on
             setSettings((s) => {
               if (!s) return s
               const set = new Set(s.defaultChannels)
-              on ? set.add(value) : set.delete(value)
+              isOn ? set.add(value) : set.delete(value)
               return { ...s, defaultChannels: Array.from(set) as Channel[] }
             })
           }}
+          // за потреби: disabled={loading}
         />
-        <span className="text-sm text-slate-700">{label}</span>
+        <span className="text-sm text-foreground">{label}</span>
       </label>
     )
   }
@@ -1113,42 +1118,40 @@ export default function ProfilePage() {
                       {/* Time format */}
                       <div className="p-4 bg-white border border-[#E2E8F0] rounded-[12px]">
                         <label className="block text-sm font-medium text-[#0F172A] mb-2">Time format</label>
-                        <div className="flex items-center gap-3">
+
+                        <RadioGroup
+                          className="flex flex-wrap gap-3"
+                          value={settings.timeFormat}
+                          onValueChange={(v) => setSettings({ ...settings, timeFormat: v as TimeFormat })}
+                        >
+                          {/* 24-hour */}
                           <label
+                            htmlFor="tf-24"
                             className={cn(
-                              'px-3 py-2 rounded-lg border cursor-pointer',
+                              'inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition',
                               settings.timeFormat === 'H24'
                                 ? 'border-[#0EA8BC] bg-[#0EA8BC]/5'
                                 : 'border-slate-200 hover:bg-slate-50',
                             )}
                           >
-                            <input
-                              type="radio"
-                              name="tf"
-                              className="mr-2 accent-[#0EA8BC]"
-                              checked={settings.timeFormat === 'H24'}
-                              onChange={() => setSettings({ ...settings, timeFormat: 'H24' })}
-                            />
-                            24-hour (e.g., 15:00)
+                            <RadioGroupItem id="tf-24" value="H24" />
+                            <span className="text-sm text-[#0F172A]">24-hour (e.g., 15:00)</span>
                           </label>
+
+                          {/* 12-hour */}
                           <label
+                            htmlFor="tf-12"
                             className={cn(
-                              'px-3 py-2 rounded-lg border cursor-pointer',
+                              'inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition',
                               settings.timeFormat === 'H12'
                                 ? 'border-[#0EA8BC] bg-[#0EA8BC]/5'
                                 : 'border-slate-200 hover:bg-slate-50',
                             )}
                           >
-                            <input
-                              type="radio"
-                              name="tf"
-                              className="mr-2 accent-[#0EA8BC]"
-                              checked={settings.timeFormat === 'H12'}
-                              onChange={() => setSettings({ ...settings, timeFormat: 'H12' })}
-                            />
-                            12-hour (e.g., 3:00 PM)
+                            <RadioGroupItem id="tf-12" value="H12" />
+                            <span className="text-sm text-[#0F172A]">12-hour (e.g., 3:00 PM)</span>
                           </label>
-                        </div>
+                        </RadioGroup>
                       </div>
 
                       {/* Default channels */}

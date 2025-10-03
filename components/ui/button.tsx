@@ -11,7 +11,7 @@ const buttonVariants = cva(
       variant: {
         // Default variants
         default:
-          'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 active:scale-95 shadow-[0_4px_12px_rgba(14,168,188,0.3)]',
+          'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-105 active:scale-95 shadow-[0_4px_12px_rgba(18,181,201,0.3)]',
         destructive:
           'bg-destructive text-destructive-foreground hover:bg-destructive/90 hover:scale-105 active:scale-95',
         outline:
@@ -22,21 +22,22 @@ const buttonVariants = cva(
 
         // PillMind-specific variants
         pillmind:
-          'bg-[#0EA8BC] text-white hover:bg-[#0B95A8] hover:scale-105 active:scale-95 shadow-[0_4px_12px_rgba(14,168,188,0.3)]',
-        pillmindOutline: 'border border-[#0EA8BC] text-[#0EA8BC] hover:bg-[#E6F7FA] hover:scale-105 active:scale-95',
-        pillmindGhost: 'text-[#0EA8BC] hover:bg-[#12B5C9]/10 hover:scale-105 active:scale-95',
-        pillmindWhite: 'bg-white text-[#0F172A] hover:bg-white/90 hover:scale-105 active:scale-95',
+          'bg-pm-teal-600 text-white hover:bg-pm-teal-700 hover:scale-105 active:scale-95 shadow-[0_4px_12px_rgba(18,181,201,0.3)]',
+        pillmindOutline:
+          'border border-pm-teal-600 text-pm-teal-600 hover:bg-pm-teal-600/10 hover:scale-105 active:scale-95',
+        pillmindGhost: 'text-pm-teal-600 hover:bg-pm-teal-500/10 hover:scale-105 active:scale-95',
+        pillmindWhite: 'bg-white text-pm-slate-900 hover:bg-white/90 hover:scale-105 active:scale-95',
         pillmindWhiteOutline: 'border border-white/70 text-white hover:bg-white/10 hover:scale-105 active:scale-95',
 
         // Special purpose variants
-        clear: 'text-[#64748B] hover:bg-slate-100 hover:scale-105 active:scale-95 rounded-md px-1',
+        clear: 'text-pm-slate-500 hover:bg-pm-slate-100 hover:scale-105 active:scale-95 rounded-md px-1',
         searchResult:
-          'w-full cursor-pointer px-3 py-2 text-left transition hover:bg-[#F8FAFC] hover:scale-105 active:scale-95',
+          'w-full cursor-pointer px-3 py-2 text-left transition hover:bg-pm-slate-50 hover:scale-105 active:scale-95',
         searchResultActive:
-          'w-full cursor-pointer px-3 py-2 text-left transition bg-[#F1F5F9] hover:scale-105 active:scale-95',
-        copy: 'inline-flex items-center gap-1 rounded-md border border-[#0EA8BC] px-3 py-1 text-sm text-[#0EA8BC] hover:bg-[#E6F7FA] hover:scale-105 active:scale-95',
+          'w-full cursor-pointer px-3 py-2 text-left transition bg-pm-slate-100 hover:scale-105 active:scale-95',
+        copy: 'inline-flex items-center gap-1 rounded-md border border-pm-teal-600 px-3 py-1 text-sm text-pm-teal-600 hover:bg-pm-teal-600/10 hover:scale-105 active:scale-95',
         brandbook:
-          'fixed flex items-center justify-center rounded-[10px] bg-gradient-to-br from-[#12B5C9] via-[#2ED3B7] to-[#3EC7E6] border border-white w-14 h-14 transition-all duration-300 hover:scale-105',
+          'fixed flex items-center justify-center rounded-[10px] bg-gradient-to-br from-pm-teal-500 via-pm-mint-500 to-pm-sky-500 border border-white w-14 h-14 transition-all duration-300 hover:scale-105',
       },
       size: {
         default: 'h-12 px-6 py-3',

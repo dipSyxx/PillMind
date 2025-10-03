@@ -101,7 +101,10 @@ function MedSearch() {
   return (
     <div ref={rootRef} className="relative w-full">
       <div className="relative">
-        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[#12B5C9]" size={16} />
+        <SearchIcon
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-pm-teal-500"
+          size={16}
+        />
         <input
           ref={inputRef}
           type="text"
@@ -113,7 +116,7 @@ function MedSearch() {
           aria-autocomplete="list"
           aria-expanded={open}
           aria-controls="med-search-listbox"
-          className="h-8 w-full rounded-[12px] border border-[#CBD5E1] bg-white pl-8 pr-8 text-[#0F172A] outline-none transition focus:border-[#0EA8BC] focus:ring-4 focus:ring-[#12B5C9]/20"
+          className="h-8 w-full rounded-[12px] border border-pm-slate-300 bg-white pl-8 pr-8 text-pm-slate-900 outline-none transition focus:border-pm-teal-600 focus:ring-4 focus:ring-pm-teal-500/20"
         />
         {q && (
           <Button
@@ -140,12 +143,12 @@ function MedSearch() {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15 }}
-          className="absolute left-0 right-0 z-20 mt-1 max-h-64 overflow-auto rounded-[12px] border border-[#E2E8F0] bg-white shadow-lg"
+          className="absolute left-0 right-0 z-20 mt-1 max-h-64 overflow-auto rounded-[12px] border border-pm-slate-300 bg-white shadow-lg"
           ref={listRef}
         >
           {/* Loading state */}
           {loading && (
-            <div className="flex items-center gap-2 p-3 text-sm text-[#64748B]">
+            <div className="flex items-center gap-2 p-3 text-sm text-pm-slate-500">
               <Loader2 className="animate-spin" size={16} />
               Searching…
             </div>
@@ -170,20 +173,24 @@ function MedSearch() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div
-                      className="truncate text-sm font-medium text-[#0F172A]"
+                      className="truncate text-sm font-medium text-pm-slate-900"
                       dangerouslySetInnerHTML={{
                         __html: item.formattedTitle || item.title,
                       }}
                     />
-                    {item.extraText && <p className="mt-0.5 line-clamp-1 text-xs text-[#64748B]">{item.extraText}</p>}
+                    {item.extraText && (
+                      <p className="mt-0.5 line-clamp-1 text-xs text-pm-slate-500">{item.extraText}</p>
+                    )}
                   </div>
-                  <ExternalLink size={16} className="shrink-0 text-[#94A3B8]" />
+                  <ExternalLink size={16} className="shrink-0 text-pm-slate-300" />
                 </div>
               </Button>
             ))}
 
           {/* Empty */}
-          {!loading && hasQuery && results.length === 0 && <div className="p-3 text-sm text-[#64748B]">No results</div>}
+          {!loading && hasQuery && results.length === 0 && (
+            <div className="p-3 text-sm text-pm-slate-500">No results</div>
+          )}
         </motion.div>
       )}
     </div>
@@ -194,7 +201,7 @@ export function Hero() {
   return (
     <section
       id="hero"
-      className="relative overflow-hidden bg-gradient-to-br from-[#12B5C9] via-[#2ED3B7] to-[#3EC7E6] text-white"
+      className="relative overflow-hidden bg-gradient-to-br from-pm-teal-500 via-pm-mint-500 to-pm-sky-500 text-white"
     >
       <Container>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10 py-20 md:py-28 items-center">
@@ -254,7 +261,7 @@ export function Hero() {
                     duration: 0.5,
                   }}
                 >
-                  <Check className="w-5 h-5 text-[#0EA8BC]" /> {item.text}
+                  <Check className="w-5 h-5 text-pm-teal-600" /> {item.text}
                 </motion.li>
               ))}
             </motion.ul>
@@ -278,13 +285,13 @@ export function Hero() {
               whileHover={{ y: -10 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="h-full rounded-[20px] border border-[#E2E8F0] bg-gradient-to-b from-[#F8FAFC] to-white p-5">
+              <div className="h-full rounded-[20px] border border-pm-slate-300 bg-gradient-to-b from-pm-slate-50 to-white p-5">
                 <div className="flex gap-3 items-center justify-between">
-                  <span className="min-w-[63px] text-sm font-semibold text-[#334155]">My meds</span>
+                  <span className="min-w-[63px] text-sm font-semibold text-pm-slate-700">My meds</span>
                   <div className="w-full">
                     <MedSearch />
                   </div>
-                  <span className="text-xs text-[#64748B]">Today</span>
+                  <span className="text-xs text-pm-slate-500">Today</span>
                 </div>
                 <div className="mt-4 space-y-3">
                   {[
@@ -306,7 +313,7 @@ export function Hero() {
                   ].map((item, idx) => (
                     <motion.div
                       key={idx}
-                      className="flex items-center justify-between rounded-[12px] border border-[#E2E8F0] bg-white p-3 hover:scale-105 transition-all duration-200"
+                      className="flex items-center justify-between rounded-[12px] border border-pm-slate-300 bg-white p-3 hover:scale-105 transition-all duration-200"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{
@@ -316,23 +323,23 @@ export function Hero() {
                       whileHover={{ scale: 1.02 }}
                     >
                       <div className="flex items-center gap-3">
-                        <Pill size={20} color="#0EA8BC" />
+                        <Pill size={20} color="var(--pm-teal-600)" />
                         <div>
-                          <p className="font-medium text-[#0F172A]">{item.name}</p>
-                          <p className="text-xs text-[#64748B]">{item.dose}</p>
+                          <p className="font-medium text-pm-slate-900">{item.name}</p>
+                          <p className="text-xs text-pm-slate-500">{item.dose}</p>
                         </div>
                       </div>
-                      <span className="text-sm font-medium text-[#0EA8BC]">{item.time}</span>
+                      <span className="text-sm font-medium text-pm-teal-600">{item.time}</span>
                     </motion.div>
                   ))}
                 </div>
                 <motion.div
-                  className="mt-5 rounded-[12px] bg-[#F1F5F9] p-4 hover:scale-105 transition-all duration-200"
+                  className="mt-5 rounded-[12px] bg-pm-slate-100 p-4 hover:scale-105 transition-all duration-200"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1.2, duration: 0.5 }}
                 >
-                  <p className="text-sm font-semibold text-[#0F172A]">Analytics</p>
+                  <p className="text-sm font-semibold text-pm-slate-900">Analytics</p>
                   <MiniAnalytics delay={1.3} />
                 </motion.div>
               </div>
