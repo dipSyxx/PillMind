@@ -25,6 +25,7 @@ import {
   Pill,
   Info,
   SettingsIcon,
+  ArrowRight,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -450,7 +451,7 @@ export default function ProfilePage() {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.4 }}
-            className="mb-6"
+            className="flex flex-row justify-between mb-6"
           >
             <Button
               variant="ghost"
@@ -460,6 +461,15 @@ export default function ProfilePage() {
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Home
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/home')}
+              className="text-[#64748B] hover:text-[#0F172A]"
+            >
+              Go to App
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </motion.div>
 
