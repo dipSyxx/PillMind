@@ -9,6 +9,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Fix for multiple lockfiles warning
+  outputFileTracingRoot: process.cwd(),
 }
 
 export default nextConfig

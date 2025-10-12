@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/prisma-client'
 import bcrypt from 'bcryptjs'
+import { addMinutes, getYear } from 'date-fns'
 
 const MAILEROO_API_URL = 'https://smtp.maileroo.com/api/v2/emails/template'
 
@@ -29,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     // 1) Generate code + expiry
     const code = generateCode()
-    const expires = new Date(Date.now() + ttlMinutes * 60 * 1000)
+    const expires = addMinutes(new Date(), ttlMinutes)
 
     // 2) Store bcrypt-hash of the code for this email
     const tokenHash = await bcrypt.hash(code, 12)
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest) {
         code, // {{code}}
         expiryMinutes: ttlMinutes, // {{expiryMinutes}}
         name: name || 'there', // {{name}}
-        year: new Date().getFullYear(), // {{year}}
+        year: getYear(new Date()), // {{year}}
       },
       // optional:
       tracking: true,

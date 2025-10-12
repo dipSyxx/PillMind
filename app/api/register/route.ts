@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
 
     // 6) Atomically create User + UserSettings and cleanup tokens
     // All statements either succeed or fail together.
-    const now = new Date()
+    const currentTime = new Date()
     await prisma.$transaction(async (tx) => {
       // one-time use: delete all verification tokens for this identifier first
       await tx.verificationToken.deleteMany({ where: { identifier: email } })
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
           name,
           email,
           passwordHash,
-          emailVerified: now,
+          emailVerified: currentTime,
         },
         select: { id: true },
       })

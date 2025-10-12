@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSession, signOut, signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import { format, parseISO } from 'date-fns'
 import {
   User,
   Mail,
@@ -354,7 +355,7 @@ export default function ProfilePage() {
       }
       const updated = await res.json()
       setSettings(updated)
-      setSuccess('Settings updated!')
+      setSuccess('Settings updated! All schedules synchronized with new timezone.')
     } catch (e: any) {
       setSettingsError(e?.message || 'Failed to update settings')
     } finally {
@@ -713,7 +714,7 @@ export default function ProfilePage() {
                               <div className="flex-1">
                                 <p className="text-sm text-[#64748B]">Member Since</p>
                                 <p className="font-medium text-[#0F172A]">
-                                  {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : 'Unknown'}
+                                  {profile?.createdAt ? format(parseISO(profile.createdAt), 'PPP') : 'Unknown'}
                                 </p>
                               </div>
                             </div>
@@ -724,7 +725,7 @@ export default function ProfilePage() {
                               <div className="flex-1">
                                 <p className="text-sm text-[#64748B]">Last Updated</p>
                                 <p className="font-medium text-[#0F172A]">
-                                  {profile?.updatedAt ? new Date(profile.updatedAt).toLocaleString() : 'Unknown'}
+                                  {profile?.updatedAt ? format(parseISO(profile.updatedAt), 'PPpp') : 'Unknown'}
                                 </p>
                               </div>
                             </div>
