@@ -15,7 +15,7 @@ import {
   SnoozeDialog,
 } from '@/components/home'
 import { DoseLog } from '@/types/medication'
-import { dayKeyInTz, statusByDay, canInteractWithDose, startOfWeek, addDays } from '@/lib/medication-utils'
+import { dayKeyInTz, statusByDay, canInteractWithDose, startOfWeek, addDays, isTodayInTz } from '@/lib/medication-utils'
 import { addMinutes, compareAsc, parseISO } from 'date-fns'
 import { useUserData, useUserActions } from '@/hooks/useUserStore'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
@@ -126,7 +126,7 @@ export default function HomePage() {
   // === Advanced Dose actions with smart features ===
   async function takeDose(doseLogId: string) {
     const dl = userDoseLogs.find((x) => x.id === doseLogId)
-    if (!dl || !userSettings || !canInteractWithDose(dl, userSettings.timezone)) return
+    if (!dl || !userSettings || !isTodayInTz(new Date(dl.scheduledFor), userSettings.timezone)) return
 
     // Optimistic update
     updateDoseLog(doseLogId, { status: 'TAKEN', takenAt: new Date().toISOString() })
@@ -149,7 +149,7 @@ export default function HomePage() {
 
   async function skipDose(doseLogId: string) {
     const dl = userDoseLogs.find((x) => x.id === doseLogId)
-    if (!dl || !userSettings || !canInteractWithDose(dl, userSettings.timezone)) return
+    if (!dl || !userSettings || !isTodayInTz(new Date(dl.scheduledFor), userSettings.timezone)) return
 
     // Optimistic update
     updateDoseLog(doseLogId, { status: 'SKIPPED' })
@@ -170,7 +170,7 @@ export default function HomePage() {
 
   async function snoozeDose(doseLogId: string, minutes: number) {
     const dl = userDoseLogs.find((x) => x.id === doseLogId)
-    if (!dl || !userSettings || !canInteractWithDose(dl, userSettings.timezone)) return
+    if (!dl || !userSettings || !isTodayInTz(new Date(dl.scheduledFor), userSettings.timezone)) return
 
     const newScheduledFor = addMinutes(new Date(), minutes).toISOString()
 
@@ -228,6 +228,7 @@ export default function HomePage() {
         unit: defaultU,
         updateInventory: true,
         notes: 'Taken via PRN quick action',
+        userTimezone: userSettings.timezone,
       })
 
       // Update local state with the actual created dose log
@@ -417,8 +418,8 @@ export default function HomePage() {
             return `Unknown Medication (${medicationId.slice(-6)})`
           }}
           getPrescription={(prescriptionId) => rxById[prescriptionId]}
-          canInteractWithDose={(doseLog) => canInteractWithDose(doseLog, userSettings?.timezone || 'UTC')}
-          getStatusByDay={(doseLog) => statusByDay(doseLog, userSettings?.timezone || 'UTC')}
+          canInteractWithDose={(doseLog) => isTodayInTz(new Date(doseLog.scheduledFor), userSettings.timezone)}
+          getStatusByDay={(doseLog) => statusByDay(doseLog, userSettings.timezone)}
           selectedDate={selectedDate}
         />
       )}
@@ -486,7 +487,7 @@ export default function HomePage() {
                 // Error is already handled in the store
               }
             }}
-            timezone={userSettings?.timezone || 'UTC'}
+            timezone={userSettings.timezone}
             timeFormat={userSettings?.timeFormat || 'H24'}
           />
         </DrawerContent>

@@ -11,13 +11,104 @@ import {
   setHours,
   setMinutes,
   setSeconds,
-  setMilliseconds
+  setMilliseconds,
+  addMinutes,
+  addDays as dateFnsAddDays,
+  startOfDay as dateFnsStartOfDay
 } from 'date-fns'
+import { formatInTimeZone, toZonedTime, fromZonedTime } from 'date-fns-tz'
 import { DoseLog, DoseStatus, TimeFormat, Weekday } from '@/types/medication'
 
 // Custom startOfWeek that starts on Monday (weekStartsOn: 1)
 export function startOfWeek(date: Date): Date {
   return dateFnsStartOfWeek(date, { weekStartsOn: 1 })
+}
+
+// ===== TIMEZONE UTILITIES =====
+
+/**
+ * Get current time in specific timezone
+ */
+export function nowInTz(tz: string): Date {
+  return toZonedTime(new Date(), tz)
+}
+
+/**
+ * Get start of day in specific timezone
+ */
+export function startOfDayInTz(date: Date, tz: string): Date {
+  const zonedDate = toZonedTime(date, tz)
+  const startOfDayZoned = dateFnsStartOfDay(zonedDate)
+  return fromZonedTime(startOfDayZoned, tz)
+}
+
+/**
+ * Add days in specific timezone
+ */
+export function addDaysInTz(date: Date, days: number, tz: string): Date {
+  const zonedDate = toZonedTime(date, tz)
+  const newZonedDate = dateFnsAddDays(zonedDate, days)
+  return fromZonedTime(newZonedDate, tz)
+}
+
+/**
+ * Convert timezone HH:mm to UTC ISO string for a specific day
+ */
+export function tzHmToUtcISO(day: Date, hm: string, tz: string): string {
+  const [hours, minutes] = hm.split(':').map(Number)
+
+  // Create date in the target timezone
+  const zonedDate = toZonedTime(day, tz)
+  const zonedDateTime = new Date(zonedDate)
+  zonedDateTime.setHours(hours, minutes, 0, 0)
+
+  // Convert back to UTC
+  const utcDateTime = fromZonedTime(zonedDateTime, tz)
+  return utcDateTime.toISOString()
+}
+
+/**
+ * Get weekday from date in specific timezone
+ */
+export function weekdayOf(date: Date, tz: string): Weekday {
+  const zonedDate = toZonedTime(date, tz)
+  const dayOfWeek = zonedDate.getDay()
+
+  const weekdays: Weekday[] = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+  return weekdays[dayOfWeek]
+}
+
+/**
+ * Check if date is today in specific timezone
+ */
+export function isTodayInTz(dt: Date, tz: string): boolean {
+  const today = nowInTz(tz)
+  const targetDate = toZonedTime(dt, tz)
+
+  return (
+    today.getFullYear() === targetDate.getFullYear() &&
+    today.getMonth() === targetDate.getMonth() &&
+    today.getDate() === targetDate.getDate()
+  )
+}
+
+/**
+ * Get timezone day range (start and end) for a specific date
+ */
+export function tzDayRangeToUtc(tz: string, date: Date): { start: Date; end: Date } {
+  const start = startOfDayInTz(date, tz)
+  const end = addDaysInTz(start, 1, tz)
+
+  return { start, end }
+}
+
+/**
+ * Assert that dose can be acted upon today
+ */
+export function assertCanActToday(dl: DoseLog, tz: string): void {
+  if (!isTodayInTz(new Date(dl.scheduledFor), tz)) {
+    throw new Error('Not actionable outside of current day')
+  }
 }
 
 // Timezone utilities (simplified, in production use your time utils)

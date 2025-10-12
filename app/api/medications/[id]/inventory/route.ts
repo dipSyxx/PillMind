@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/prisma-client'
 import { getUserIdFromSession } from '@/lib/session'
 import { z } from 'zod'
+import { nowInTz } from '@/lib/medication-utils'
 
 const inventorySchema = z.object({
   currentQty: z.number().min(0),
@@ -106,11 +107,31 @@ export async function PUT(
     // Check if medication exists and belongs to user
     const medication = await prisma.medication.findFirst({
       where: { id: params.id, userId },
+      include: {
+        user: {
+          include: {
+            settings: true
+          }
+        }
+      }
     })
 
     if (!medication) {
       return NextResponse.json({ error: 'Medication not found' }, { status: 404 })
     }
+
+    // Get user's timezone for proper timestamp handling
+    const userTimezone = medication.user.settings?.timezone || 'UTC'
+    const nowInUserTz = nowInTz(userTimezone)
+
+    // Check if inventory exists to determine if this is a restock
+    const existingInventory = await prisma.inventory.findUnique({
+      where: { medicationId: params.id },
+    })
+
+    // Calculate if this is a restock (quantity increased)
+    const isRestock = existingInventory && validatedData.currentQty > Number(existingInventory.currentQty)
+    const lastRestockedAt = isRestock ? nowInUserTz : (validatedData.lastRestockedAt ? new Date(validatedData.lastRestockedAt) : existingInventory?.lastRestockedAt)
 
     const inventory = await prisma.inventory.upsert({
       where: { medicationId: params.id },
@@ -118,14 +139,14 @@ export async function PUT(
         currentQty: validatedData.currentQty,
         unit: validatedData.unit,
         lowThreshold: validatedData.lowThreshold,
-        lastRestockedAt: validatedData.lastRestockedAt ? new Date(validatedData.lastRestockedAt) : null,
+        lastRestockedAt,
       },
       create: {
         medicationId: params.id,
         currentQty: validatedData.currentQty,
         unit: validatedData.unit,
         lowThreshold: validatedData.lowThreshold,
-        lastRestockedAt: validatedData.lastRestockedAt ? new Date(validatedData.lastRestockedAt) : null,
+        lastRestockedAt,
       },
     })
 

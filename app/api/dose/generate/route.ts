@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/prisma-client'
 import { getUserIdFromSession } from '@/lib/session'
 import { z } from 'zod'
-import { startOfWeek, addDays, isSameDay } from 'date-fns'
+import { startOfWeek, addDays, isSameDay, weekdayOf, tzHmToUtcISO, addDaysInTz, startOfDayInTz } from '@/lib/medication-utils'
 
 const generateDosesSchema = z.object({
   prescriptionId: z.string().min(1),
   from: z.string().datetime(),
   to: z.string().datetime(),
+  timezone: z.string().min(1),
 })
 
 export async function POST(request: NextRequest) {
@@ -38,29 +39,28 @@ export async function POST(request: NextRequest) {
 
     const fromDate = new Date(validatedData.from)
     const toDate = new Date(validatedData.to)
+    const timezone = validatedData.timezone
     const generatedDoses = []
 
     // Generate doses for each schedule
     for (const schedule of prescription.schedules) {
-      const currentDate = new Date(fromDate)
+      const currentDate = startOfDayInTz(fromDate, timezone)
 
       while (currentDate <= toDate) {
-        const weekday = currentDate.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase().slice(0, 3) as any
+        const weekday = weekdayOf(currentDate, timezone)
 
         // Check if this day is in the schedule
         if (schedule.daysOfWeek.includes(weekday)) {
           // Generate doses for each time in the schedule
           for (const time of schedule.times) {
-            const [hours, minutes] = time.split(':').map(Number)
-            const scheduledFor = new Date(currentDate)
-            scheduledFor.setHours(hours, minutes, 0, 0)
+            const scheduledForUtc = tzHmToUtcISO(currentDate, time, timezone)
 
             // Check if dose already exists
             const existingDose = await prisma.doseLog.findFirst({
               where: {
                 prescriptionId: prescription.id,
                 scheduleId: schedule.id,
-                scheduledFor,
+                scheduledFor: new Date(scheduledForUtc),
               },
             })
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
                 data: {
                   prescriptionId: prescription.id,
                   scheduleId: schedule.id,
-                  scheduledFor,
+                  scheduledFor: new Date(scheduledForUtc),
                   status: 'SCHEDULED',
                   quantity: schedule.doseQuantity,
                   unit: schedule.doseUnit,
@@ -80,7 +80,9 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        currentDate.setDate(currentDate.getDate() + 1)
+        // Move to next day in timezone
+        const nextDay = addDaysInTz(currentDate, 1, timezone)
+        currentDate.setTime(nextDay.getTime())
       }
     }
 

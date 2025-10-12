@@ -1,4 +1,5 @@
 import { Medication, Prescription, Schedule, DoseLog, Inventory, CareProvider } from '@/types/medication'
+import { tzDayRangeToUtc } from '@/lib/medication-utils'
 
 export class MedicationService {
   private baseUrl = '/api'
@@ -314,9 +315,41 @@ export class MedicationService {
       unit?: string
       notes?: string
       updateInventory?: boolean
+      userTimezone?: string
     }
   ): Promise<DoseLog> {
     const now = new Date()
+
+    // Get prescription to check maxDailyDose
+    const prescriptionResponse = await fetch(`${this.baseUrl}/prescriptions/${prescriptionId}`)
+    if (!prescriptionResponse.ok) {
+      throw new Error('Failed to get prescription')
+    }
+    const prescription = await prescriptionResponse.json()
+
+    // Check maxDailyDose if specified
+    if (prescription.maxDailyDose) {
+      const userTimezone = options?.userTimezone || prescription.schedules[0]?.timezone || 'UTC'
+      const todayRange = this.getTodayRangeInTimezone(userTimezone)
+
+      // Get today's taken doses
+      const todayDosesResponse = await fetch(
+        `${this.baseUrl}/dose?prescriptionId=${prescriptionId}&from=${todayRange.start.toISOString()}&to=${todayRange.end.toISOString()}&status=TAKEN`
+      )
+
+      if (todayDosesResponse.ok) {
+        const todayDoses = await todayDosesResponse.json()
+        const totalTakenToday = todayDoses.reduce((sum: number, dose: any) => {
+          return sum + (dose.quantity || prescription.schedules[0]?.doseQuantity || 1)
+        }, 0)
+
+        const requestedQuantity = options?.quantity || prescription.schedules[0]?.doseQuantity || 1
+
+        if (totalTakenToday + requestedQuantity > prescription.maxDailyDose) {
+          throw new Error(`Daily PRN limit reached. Already taken ${totalTakenToday}/${prescription.maxDailyDose} today.`)
+        }
+      }
+    }
 
     const response = await fetch(`${this.baseUrl}/dose`, {
       method: 'POST',
@@ -360,6 +393,12 @@ export class MedicationService {
     }
 
     return doseLog
+  }
+
+  // Helper method to get today's range in timezone
+  private getTodayRangeInTimezone(timezone: string): { start: Date; end: Date } {
+    const now = new Date()
+    return tzDayRangeToUtc(timezone, now)
   }
 
   // ===== INVENTORY MANAGEMENT =====
