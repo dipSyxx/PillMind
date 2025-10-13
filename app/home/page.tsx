@@ -14,7 +14,7 @@ import {
   BottomNavigation,
   SnoozeDialog,
 } from '@/components/home'
-import { DoseLog } from '@/types/medication'
+import { DoseLog, UserSettings } from '@/types/medication'
 import { dayKeyInTz, statusByDay, canInteractWithDose, startOfWeek, addDays, isTodayInTz } from '@/lib/medication-utils'
 import { addMinutes, compareAsc, parseISO } from 'date-fns'
 import { useUserData, useUserActions } from '@/hooks/useUserStore'
@@ -49,11 +49,11 @@ export default function HomePage() {
   } = useUserActions()
 
   // Use real data from store
-  const userSettings = settings || {
+  const userSettings: UserSettings = settings ?? {
     userId: 'default',
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-    timeFormat: 'H24' as const,
-    defaultChannels: ['EMAIL'] as const,
+    timeFormat: 'H24',
+    defaultChannels: ['EMAIL'], // note: no 'as const'
   }
   const userMeds = medications || []
   const userRx = prescriptions || []
