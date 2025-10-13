@@ -1,233 +1,172 @@
-# PillMind - Medication Reminder App
+# PillMind Medication Platform
 
-A modern, user-friendly medication reminder application built with Next.js, TypeScript, and Tailwind CSS.
+A full-stack medication management platform that combines a patient-facing treatment workspace, rich analytics, and branded marketing surfaces. The app is built on Next.js 15 App Router with TypeScript, Tailwind CSS 4, Prisma, and a modern component system to deliver an accessible, mobile-first experience for adherence tracking and caregiver collaboration.
 
-## 🏗️ Project Structure
+## Table of contents
+- [Overview](#overview)
+- [Core capabilities](#core-capabilities)
+- [Technology stack](#technology-stack)
+- [Architecture](#architecture)
+- [Data & persistence](#data--persistence)
+- [API surface](#api-surface)
+- [State & business logic](#state--business-logic)
+- [Design system](#design-system)
+- [Content & marketing pages](#content--marketing-pages)
+- [Configuration](#configuration)
+- [Getting started](#getting-started)
+- [Scripts](#scripts)
+- [Quality checks](#quality-checks)
+- [Contributing](#contributing)
+- [License & support](#license--support)
 
+## Overview
+PillMind delivers two complementary experiences:
+
+- **Authenticated workspace** (`/home`, `/profile`) that helps patients plan schedules, record doses, snooze reminders, and keep prescriptions, analytics, and adherence data in sync with their local timezone and preferences.
+- **Public marketing layer** (landing page, brandbook, marketing materials) that showcases the product value, trust signals, and downloadable assets for partners and campaigns.
+
+Both surfaces share a cohesive design language, metadata, and SEO configuration, enabling consistent storytelling from acquisition through engagement.
+
+## Core capabilities
+### Medication management workspace
+- Weekly navigation with dynamic adherence metrics, day schedules, PRN quick actions, and snooze flows for real-time dose control.
+- Visual summaries of taken, scheduled, missed, and skipped doses that adapt badges and progress bars based on adherence percentage thresholds.
+- Inventory alerts with one-click refill helpers to restore medication quantities to safe thresholds.
+
+### Intelligence, analytics, and inventory
+- Client-side analytics service that computes adherence reports, inventory insights, and weekly/daily breakdowns backed by API data.
+- Rich medication utilities for timezone-aware scheduling, day aggregation, and action guards that keep interactions safe and deterministic.
+
+### Account & security tooling
+- Profile area with multi-tab layout covering account data, password management, authentication providers, notification preferences, and account deletion controls.
+- NextAuth integration supporting credentials, Google, and GitHub providers with JWT sessions and Prisma adapter persistence.
+
+### Marketing & branding
+- Landing page hero, feature blocks, trust signals, pricing, FAQ, and CTA modules for conversion-focused storytelling.
+- Dedicated brandbook with motion guidelines, accessibility principles, voice, and downloadable asset sections for consistent partner communication.
+
+## Technology stack
+- **Framework**: Next.js 15 App Router with React 19 and TypeScript 5.9.
+- **Styling**: Tailwind CSS 4, custom theme tokens, and shadcn/ui-inspired components with Framer Motion animations.
+- **Data & auth**: Prisma 6 (PostgreSQL), NextAuth.js with Prisma adapter, bcrypt for credential hashing.
+- **State & forms**: Zustand with devtools/persist, React Hook Form + Zod validation, reusable form primitives.
+- **Data viz & UX**: Recharts, Embla Carousel, Lucide icons, Sonner toasts, and motion libraries for interactive experiences.
+
+## Architecture
 ```
-PillMind/
-├── app/
-│   ├── layout.tsx          # Root layout with SEO metadata
-│   ├── page.tsx            # Main landing page (Hero + sections)
-│   └── sitemap.ts         # Next.js sitemap generation
-├── components/
-│   ├── ui/                 # shadcn/ui components
-│   │   └── button.tsx     # Customized button with PillMind colors
-│   ├── sections/           # Page sections
-│   │   ├── hero.tsx       # Hero section
-│   │   ├── features.tsx   # Features section
-│   │   ├── how-it-works.tsx # How it works section
-│   │   ├── pricing.tsx    # Pricing section
-│   │   ├── faq.tsx        # FAQ section
-│   │   ├── security.tsx   # Security section
-│   │   ├── testimonials.tsx # Testimonials section
-│   │   ├── trust.tsx      # Trust indicators section
-│   │   └── index.ts       # Section exports
-│   ├── shared/             # Shared components
-│   │   ├── header.tsx     # Site header
-│   │   ├── footer.tsx     # Site footer
-│   │   ├── cta.tsx        # Call-to-action component
-│   │   ├── container.tsx  # Layout container
-│   │   ├── header-block.tsx # Section header component
-│   │   ├── logo.tsx       # Logo component
-│   │   ├── icons.tsx      # Icon components
-│   │   └── index.ts       # Shared component exports
-│   └── theme-provider.tsx # Theme provider
-├── content/                # MDX content files
-│   ├── faq.mdx           # FAQ content
-│   └── terms.mdx         # Terms of service
-├── lib/                   # Utility libraries
-│   ├── seo.ts            # SEO utilities and metadata
-│   ├── analytics.ts      # Analytics configuration
-│   └── utils.ts          # General utilities
-├── styles/                # Global styles
-│   └── globals.css       # Global CSS with PillMind color palette
-├── public/                # Static assets
-│   ├── images/           # Image assets
-│   └── robots.txt        # Robots.txt file
-
-└── package.json           # Dependencies and scripts
-```
-
-## 🎨 Design System
-
-### Color Palette
-
-- **Primary**: `#0EA8BC` (Teal)
-- **Secondary**: `#12B5C9` (Light Teal)
-- **Accent**: `#2ED3B7` (Mint)
-- **Background**: `#F1F5F9` (Light Gray)
-- **Text**: `#0F172A` (Dark Blue)
-
-### Typography
-
-- **Primary Font**: Inter (Latin + Cyrillic support)
-- **Monospace Font**: JetBrains Mono
-- **Base Size**: 16px
-- **Line Height**: 1.5
-
-### Components
-
-- **Buttons**: Custom variants with PillMind colors
-- **Cards**: Rounded corners (16px) with subtle shadows
-- **Containers**: Max-width 1200px with responsive padding
-
-## 🚀 Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- pnpm (recommended) or npm
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd PillMind
-
-# Install dependencies
-pnpm install
-
-# Start development server
-pnpm dev
+app/
+├─ (auth)/        // Login & registration routes
+├─ api/           // Route handlers for medications, doses, providers, analytics
+├─ brandbook/     // Brand guidelines microsite
+├─ home/          // Authenticated home dashboard
+├─ profile/       // Account management hub
+├─ marketing-materials/ // Campaign assets portal
+├─ layout.tsx     // Global layout with SEO metadata
+└─ sitemap.ts     // Dynamic sitemap generation
+components/
+├─ home/          // Dashboard widgets & controls
+├─ sections/      // Landing page feature sections
+├─ shared/        // Header, footer, CTA, container, logo, icons
+└─ ui/            // Styled primitives (button, form, drawer, etc.)
+content/          // MDX (FAQ, terms)
+hooks/            // Custom hooks (user store bridge, FK search, debounce)
+lib/              // Auth, analytics, medication utilities, validation, API clients
+prisma/           // Prisma schema, client helper
+stores/           // Zustand state stores
 ```
 
-### Build
+The App Router powers both marketing and authenticated sub-apps while sharing layout, fonts, and SEO metadata in `app/layout.tsx`. Shared primitives in `components/ui` and `components/shared` keep surfaces visually aligned.
 
-```bash
-# Build for production
-pnpm build
+## Data & persistence
+The Prisma schema models users, medications, prescriptions, schedules, dose logs, inventory, notifications, and care providers with rich enums for forms, units, and routes. Relationships enforce cascading deletes and maintain referential integrity between prescriptions, schedules, inventories, and dose logs.
 
-# Start production server
-pnpm start
-```
+A generated Prisma client (`prisma/prisma-client.ts`) is shared across route handlers and services, and the `postinstall` script runs `prisma generate` automatically.
 
-## 📱 Features
+## API surface
+Route handlers under `app/api` expose JSON endpoints for the front-end:
 
-### Core Functionality
+| Endpoint | Description |
+| --- | --- |
+| `GET/POST /api/medications` | CRUD access for user-specific medication catalog with validation and inventory includes. |
+| `GET/POST /api/prescriptions` | Manage prescriptions and their schedules for authenticated users. |
+| `GET /api/dose` | Fetch dose logs for a date range to populate schedules and analytics. |
+| `PATCH /api/dose/[id]` | Update dose status (taken/skipped) with optimistic UI flows. |
+| `POST /api/notifications` | Trigger notification workflows and log delivery attempts. |
+| `GET /api/dashboard` | Aggregate adherence metrics for dashboard charts. |
+| `POST /api/register` | Handle credential-based user registration with hashed passwords. |
+| `GET /api/care-providers` | Provide linked care provider records for collaboration features. |
 
-- **Medication Tracking**: Add and manage medications
-- **Smart Reminders**: Customizable notification system
-- **Interaction Checks**: Safety warnings for drug combinations
-- **Analytics**: Track adherence and generate reports
-- **Data Export**: PDF/CSV export for healthcare providers
+All endpoints rely on `getUserIdFromSession` to enforce authentication, returning `401` responses when sessions are missing. Validation is performed with Zod to keep payloads predictable.
 
-### Technical Features
+## State & business logic
+Global client state lives in a persisted Zustand store (`stores/user-store.ts`) that tracks profile, settings, medications, prescriptions, dose logs, and loading/error flags while exposing async actions to call the API routes. React hooks (`hooks/useUserStore.ts`, `hooks/useEnsureSettings.ts`, etc.) bridge the store with components, while medication utilities consolidate timezone-aware calculations.
 
-- **Responsive Design**: Mobile-first approach
-- **SEO Optimized**: Meta tags, sitemap, robots.txt
-- **Performance**: Optimized images and animations
-- **Accessibility**: ARIA labels and keyboard navigation
-- **Internationalization**: Ukrainian and English support
+## Design system
+- Brand tokens for typography, radii, and PillMind color palette are defined in `app/globals.css`, including dark mode overrides and Tailwind theme tokens.
+- UI primitives such as buttons, forms, drawers, navigation, and badges extend shadcn/ui patterns with PillMind-specific variants for consistent styling.
+- The brandbook microsite documents logo usage, motion, accessibility, and tone guidelines to align all marketing assets.
 
-## 🔧 Configuration
+## Content & marketing pages
+Marketing copy, FAQ, and legal terms are authored in MDX under `content/`, enabling rich markdown features for the landing page and support content. The main marketing page composes hero, trust, features, security, pricing, FAQ, and CTA sections with shared header/footer components.
 
-### Environment Variables
+## Configuration
+Create a `.env.local` file in the project root and configure the following keys:
 
-```bash
-# .env.local
-NEXT_PUBLIC_GA_MEASUREMENT_ID=your-ga-id
-SITE_URL=https://pillmind.app
-```
+| Variable | Purpose |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL connection string for Prisma models. |
+| `POSTGRES_URL_NON_POOLING` | Direct connection for Prisma migrations when pooling is unavailable. |
+| `NEXTAUTH_URL` | Base URL for NextAuth callbacks and session cookies. |
+| `NEXTAUTH_SECRET` | Secret used to sign JWT sessions for NextAuth. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth credentials for Google login. |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | OAuth credentials for GitHub login. |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics 4 measurement ID for marketing insights. |
+| `SITE_URL` | Public site URL used in metadata and sitemap generation. |
 
-### Sitemap
+## Getting started
+1. **Install dependencies** (Node.js 18+, pnpm recommended):
+   ```bash
+   pnpm install
+   ```
+2. **Generate Prisma client & apply schema** (runs automatically on install, but you can push to your database):
+   ```bash
+   pnpm prisma:push
+   ```
+3. **Start the development server**:
+   ```bash
+   pnpm dev
+   ```
+4. **Open** `http://localhost:3000` to explore the marketing page, `http://localhost:3000/home` for the dashboard (requires authentication), and `http://localhost:3000/profile` for account settings.
+5. **Build for production** when ready to deploy:
+   ```bash
+   pnpm build
+   pnpm start
+   ```
 
-The project includes automatic sitemap generation using Next.js built-in sitemap generation. The sitemap is automatically available at `/sitemap.xml`.
+## Scripts
+| Script | Description |
+| --- | --- |
+| `pnpm dev` | Run the Next.js development server with hot reloading. |
+| `pnpm build` | Build the production bundle with optimized assets. |
+| `pnpm start` | Launch the production server (after `pnpm build`). |
+| `pnpm lint` | Run Next.js ESLint checks (ignored during build by default). |
+| `pnpm prisma:push` | Synchronize Prisma schema with the database. |
+| `pnpm prisma:studio` | Launch Prisma Studio for inspecting records. |
+| `pnpm prisma:pull` | Introspect the database to update the Prisma schema. |
 
-### Analytics
+## Quality checks
+- **TypeScript & ESLint**: run `pnpm lint` locally; the build configuration skips lint/type errors in CI to unblock experiments, so running lint before commits is recommended.
+- **Runtime validation**: API routes validate request bodies with Zod to avoid invalid data entering the system.
 
-Google Analytics 4 integration is included with custom event tracking for:
+## Contributing
+1. Fork the repository and create a feature branch from `main`.
+2. Install dependencies with `pnpm install` and configure environment variables.
+3. Write changes with tests or validation where possible, and run `pnpm lint` before opening a PR.
+4. Submit a pull request describing the problem and solution, including screenshots for UI changes when applicable.
 
-- Page views
-- Button clicks
-- Form submissions
-- Scroll depth
-- Downloads
-
-## 📁 Component Architecture
-
-### Sections
-
-Each section is a self-contained component with:
-
-- Framer Motion animations
-- Responsive design
-- Accessibility features
-- SEO-friendly markup
-
-### Shared Components
-
-Reusable components used across multiple sections:
-
-- **Container**: Consistent layout wrapper
-- **HeaderBlock**: Section title and subtitle
-- **Icons**: SVG icons with consistent styling
-
-## 🎭 Animations
-
-Built with Framer Motion for smooth, performant animations:
-
-- **Entrance**: Fade-in and slide-in effects
-- **Hover**: Scale and color transitions
-- **Scroll**: Viewport-based animations
-- **Stagger**: Sequential element animations
-
-## 🌐 SEO & Performance
-
-### SEO Features
-
-- Dynamic metadata generation
-- Open Graph tags
-- Twitter Card support
-- Structured data
-- Sitemap generation
-- Robots.txt configuration
-
-### Performance Optimizations
-
-- Image optimization
-- Font optimization
-- Code splitting
-- Lazy loading
-- Bundle analysis
-
-## 📚 Content Management
-
-### MDX Support
-
-Content is managed through MDX files in the `content/` directory:
-
-- **FAQ**: Frequently asked questions
-- **Terms**: Terms of service
-- **Localization**: Support for multiple languages
-
-## 🔒 Security
-
-### Data Protection
-
-- GDPR compliance
-- Data encryption
-- Access control
-- User consent management
-- Data export/deletion
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🆘 Support
-
-For support, email support@pillmind.app or create an issue in the repository.
+## License & support
+- **License**: MIT – see the `LICENSE` file if present in your fork (add one if distributing externally).
+- **Support**: Reach out via `support@pillmind.app` or open an issue for bug reports and feature requests. The FAQ in `content/faq.mdx` covers common product questions.
 
 ---
-
-Built with ❤️ for better healthcare management
+Built with ❤️ to simplify medication adherence and empower healthier routines.
