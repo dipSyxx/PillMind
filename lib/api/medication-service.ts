@@ -207,6 +207,7 @@ export class MedicationService {
         prescriptionId,
         from: options.from,
         to: options.to,
+        timezone: options.timezone || 'UTC',
       }),
     })
 
