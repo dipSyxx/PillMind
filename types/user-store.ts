@@ -60,7 +60,7 @@ export interface UserActions {
   // API actions
   createMedication: (medicationData: any) => Promise<any>
   createPrescription: (prescriptionData: any) => Promise<any>
-  generateDoses: (prescriptionId: string, from: string, to: string) => Promise<any>
+  generateDoses: (prescriptionId: string, from: string, to: string, timezone: string) => Promise<any>
   updateInventory: (medicationId: string, inventoryData: any) => Promise<any>
 
   // Utility actions

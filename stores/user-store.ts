@@ -210,7 +210,7 @@ export const useUserStore = create<UserStore>()(
           }
         },
 
-        generateDoses: async (prescriptionId: string, from: string, to: string) => {
+        generateDoses: async (prescriptionId: string, from: string, to: string, timezone: string) => {
           const { setLoading, setError } = get()
           setLoading(true)
           setError(null)
@@ -219,7 +219,7 @@ export const useUserStore = create<UserStore>()(
             const response = await fetch('/api/dose/generate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ prescriptionId, from, to }),
+              body: JSON.stringify({ prescriptionId, from, to, timezone }),
             })
 
             if (response.ok) {
