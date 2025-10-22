@@ -40,6 +40,7 @@ export class PillMindService {
       currentQty: number
       unit: 'MG' | 'MCG' | 'G' | 'ML' | 'IU' | 'DROP' | 'PUFF' | 'UNIT' | 'TAB' | 'CAPS'
       lowThreshold?: number
+      lastRestockedAt?: string
     }
     prescription: {
       indication?: string

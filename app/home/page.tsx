@@ -454,9 +454,10 @@ export default function HomePage() {
                     notes: draft.notes,
                   },
                   inventory: {
-                    currentQty: 30, // Default starting quantity
-                    unit: draft.doseUnit || 'TAB',
-                    lowThreshold: 10, // Default low threshold
+                    currentQty: draft.inventoryCurrentQty ?? 0,
+                    unit: draft.inventoryUnit || draft.doseUnit || 'TAB',
+                    lowThreshold: draft.inventoryLowThreshold ?? undefined,
+                    lastRestockedAt: draft.inventoryLastRestockedAt,
                   },
                   prescription: {
                     indication: draft.indication,

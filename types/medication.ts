@@ -116,4 +116,9 @@ export type DraftMedication = {
   doseUnit?: Unit
   daysOfWeek: Weekday[]
   times: string[]
+  // Inventory
+  inventoryCurrentQty?: number
+  inventoryUnit?: Unit
+  inventoryLowThreshold?: number
+  inventoryLastRestockedAt?: string
 }

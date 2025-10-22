@@ -30,7 +30,7 @@ interface MedicationWizardProps {
 }
 
 export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, timeFormat }: MedicationWizardProps) {
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [saving, setSaving] = useState(false)
   const [draft, setDraft] = useState<DraftMedication>({
     name: initial?.name ?? '',
@@ -48,7 +48,21 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     doseUnit: initial?.doseUnit ?? 'TAB',
     daysOfWeek: initial?.daysOfWeek ?? ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
     times: initial?.times ?? ['08:00', '20:00'],
+    inventoryCurrentQty: initial?.inventoryCurrentQty ?? 30,
+    inventoryUnit: initial?.inventoryUnit ?? initial?.doseUnit ?? 'TAB',
+    inventoryLowThreshold: initial?.inventoryLowThreshold ?? 10,
+    inventoryLastRestockedAt: initial?.inventoryLastRestockedAt,
   })
+
+  const restockedDateInputValue =
+    draft.inventoryLastRestockedAt && !Number.isNaN(new Date(draft.inventoryLastRestockedAt).getTime())
+      ? format(new Date(draft.inventoryLastRestockedAt), 'yyyy-MM-dd')
+      : ''
+  const effectiveDoseQuantity = draft.doseQuantity && draft.doseQuantity > 0 ? draft.doseQuantity : null
+  const estimatedDosesRemaining =
+    draft.inventoryCurrentQty != null && effectiveDoseQuantity
+      ? Math.max(0, Math.floor(draft.inventoryCurrentQty / effectiveDoseQuantity))
+      : null
 
   function update<K extends keyof DraftMedication>(k: K, v: DraftMedication[K]) {
     setDraft((d) => ({ ...d, [k]: v }))
@@ -72,7 +86,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     <div className="p-4 space-y-4">
       <DrawerHeader>
         <DrawerTitle>{mode === 'create' ? 'Add medication' : 'Edit medication'}</DrawerTitle>
-        <DrawerDescription>Complete 3 quick steps to configure medication and reminders.</DrawerDescription>
+        <DrawerDescription>Complete 4 quick steps to configure medication, reminders, and inventory.</DrawerDescription>
       </DrawerHeader>
 
       {/* Steps */}
@@ -84,6 +98,9 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
           Prescription
         </StepDot>
         <StepDot done={step > 3} active={step === 3}>
+          Inventory
+        </StepDot>
+        <StepDot done={step > 4} active={step === 4}>
           Schedule
         </StepDot>
       </div>
@@ -189,7 +206,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
           </div>
         </div>
       )}
-
       {step === 2 && (
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-xl bg-white">
@@ -239,6 +255,83 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
       )}
 
       {step === 3 && (
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <Input
+              label="Current quantity"
+              type="number"
+              placeholder="e.g., 30"
+              value={draft.inventoryCurrentQty ?? ''}
+              onChange={(e) => {
+                const value = e.target.value
+                update('inventoryCurrentQty', value ? Number(value) : undefined)
+              }}
+            />
+            <div>
+              <label className="block text-sm font-medium text-[#334155] mb-1">Inventory unit</label>
+              <Select
+                value={draft.inventoryUnit ?? draft.doseUnit ?? 'TAB'}
+                onValueChange={(v) => update('inventoryUnit', v as Unit)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Unit" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(['MG', 'MCG', 'G', 'ML', 'IU', 'TAB', 'CAPS', 'DROP', 'PUFF', 'UNIT'] as Unit[]).map((u) => (
+                    <SelectItem key={u} value={u}>
+                      {u}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Input
+            label="Low stock threshold (optional)"
+            type="number"
+            placeholder="e.g., 10"
+            value={draft.inventoryLowThreshold ?? ''}
+            onChange={(e) => {
+              const value = e.target.value
+              update('inventoryLowThreshold', value ? Number(value) : undefined)
+            }}
+          />
+
+          <Input
+            label="Last restocked (optional)"
+            type="date"
+            value={restockedDateInputValue}
+            onChange={(e) => {
+              const value = e.target.value
+              update('inventoryLastRestockedAt', value ? new Date(`${value}T00:00:00`).toISOString() : undefined)
+            }}
+          />
+
+          <div className="p-3 border border-[#E2E8F0] rounded-xl bg-[#F8FAFC] text-xs text-[#64748B]">
+            <p>
+              Track remaining supply to trigger low stock alerts and plan refills in time.
+              {estimatedDosesRemaining != null && effectiveDoseQuantity ? (
+                <span className="block text-[#0F172A] mt-1">
+                  Approx. {estimatedDosesRemaining} doses left at {effectiveDoseQuantity}{' '}
+                  {draft.doseUnit ?? draft.inventoryUnit ?? 'unit'} per dose.
+                </span>
+              ) : null}
+            </p>
+          </div>
+
+          <div className="flex justify-between pt-2">
+            <Button variant="pillmindWhite" onClick={() => setStep(2)} className="rounded-xl">
+              Back
+            </Button>
+            <Button variant="pillmind" onClick={() => setStep(4)} className="rounded-xl">
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 4 && (
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <Input
@@ -305,11 +398,11 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
           )}
 
           <div className="flex justify-between pt-2">
-            <Button variant="pillmindWhite" onClick={() => setStep(2)} className="rounded-xl">
+            <Button variant="pillmindWhite" onClick={() => setStep(3)} className="rounded-xl">
               Back
             </Button>
             <Button variant="pillmind" onClick={save} disabled={saving} className="rounded-xl">
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </div>

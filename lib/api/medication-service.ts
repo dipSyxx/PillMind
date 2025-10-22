@@ -20,6 +20,7 @@ export class MedicationService {
       currentQty: number
       unit: 'MG' | 'MCG' | 'G' | 'ML' | 'IU' | 'DROP' | 'PUFF' | 'UNIT' | 'TAB' | 'CAPS'
       lowThreshold?: number
+      lastRestockedAt?: string
     }
   }): Promise<Medication & { inventory?: Inventory }> {
     const response = await fetch(`${this.baseUrl}/medications`, {
