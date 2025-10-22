@@ -12,13 +12,26 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerDescription,
-  DrawerTrigger,
   DrawerFooter,
 } from '@/components/ui/drawer'
 import { cn } from '@/lib/utils'
 import { DraftMedication, MedForm, RouteKind, Unit, Weekday, TimeFormat } from '@/types/medication'
 import { WEEKDAYS, weekdayLabelShort } from '@/lib/medication-utils'
 import { format } from 'date-fns'
+
+const FORM_OPTIONS: MedForm[] = ['TABLET', 'CAPSULE', 'LIQUID', 'INJECTION', 'INHALER', 'TOPICAL', 'DROPS', 'OTHER']
+const ROUTE_OPTIONS: RouteKind[] = [
+  'ORAL',
+  'SUBLINGUAL',
+  'INHALATION',
+  'TOPICAL',
+  'INJECTION',
+  'OPHTHALMIC',
+  'NASAL',
+  'RECTAL',
+  'OTHER',
+]
+const UNIT_OPTIONS: Unit[] = ['MG', 'MCG', 'G', 'ML', 'IU', 'TAB', 'CAPS', 'DROP', 'PUFF', 'UNIT']
 
 interface MedicationWizardProps {
   mode: 'create' | 'edit'
@@ -112,7 +125,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
   const strengthInvalid = !isPositiveNumber(draft.strengthValue)
   const instructionsMissing = !(draft.instructions ?? '').trim()
   const maxDailyDoseInvalid = draft.asNeeded && !isPositiveNumber(draft.maxDailyDose)
-  const inventoryQtyInvalid = !isPositiveNumber(draft.inventoryCurrentQty)
+  const inventoryQtyInvalid = !isNonNegativeNumber(draft.inventoryCurrentQty)
   const inventoryUnitMissing = !draft.inventoryUnit
   const inventoryThresholdInvalid = draft.inventoryLowThreshold != null && draft.inventoryLowThreshold < 0
   const doseQuantityInvalid = !isPositiveNumber(draft.doseQuantity)
@@ -186,9 +199,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   <SelectValue placeholder="Select form" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(
-                    ['TABLET', 'CAPSULE', 'LIQUID', 'INJECTION', 'INHALER', 'TOPICAL', 'DROPS', 'OTHER'] as MedForm[]
-                  ).map((f) => (
+                  {FORM_OPTIONS.map((f) => (
                     <SelectItem key={f} value={f}>
                       {f}
                     </SelectItem>
@@ -203,19 +214,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   <SelectValue placeholder="Select route" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(
-                    [
-                      'ORAL',
-                      'SUBLINGUAL',
-                      'INHALATION',
-                      'TOPICAL',
-                      'INJECTION',
-                      'OPHTHALMIC',
-                      'NASAL',
-                      'RECTAL',
-                      'OTHER',
-                    ] as RouteKind[]
-                  ).map((r) => (
+                  {ROUTE_OPTIONS.map((r) => (
                     <SelectItem key={r} value={r}>
                       {r}
                     </SelectItem>
@@ -248,7 +247,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   <SelectValue placeholder="Unit" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(['MG', 'MCG', 'G', 'ML', 'IU', 'TAB', 'CAPS', 'DROP', 'PUFF', 'UNIT'] as Unit[]).map((u) => (
+                  {UNIT_OPTIONS.map((u) => (
                     <SelectItem key={u} value={u}>
                       {u}
                     </SelectItem>
@@ -376,7 +375,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   <SelectValue placeholder="Unit" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(['MG', 'MCG', 'G', 'ML', 'IU', 'TAB', 'CAPS', 'DROP', 'PUFF', 'UNIT'] as Unit[]).map((u) => (
+                  {UNIT_OPTIONS.map((u) => (
                     <SelectItem key={u} value={u}>
                       {u}
                     </SelectItem>
@@ -391,6 +390,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
             type="number"
             placeholder="e.g., 10"
             value={draft.inventoryLowThreshold ?? ''}
+            min={0}
             aria-invalid={step3Touched && inventoryThresholdInvalid ? 'true' : undefined}
             className={cn(step3Touched && inventoryThresholdInvalid && 'border-red-400 focus-visible:ring-red-400')}
             onChange={(e) => {
@@ -460,7 +460,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   <SelectValue placeholder="Unit" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(['TAB', 'CAPS', 'ML', 'MG', 'UNIT', 'DROP', 'PUFF'] as Unit[]).map((u) => (
+                  {UNIT_OPTIONS.map((u) => (
                     <SelectItem key={u} value={u}>
                       {u}
                     </SelectItem>
@@ -637,7 +637,7 @@ function getStepErrors(step: WizardStep, draft: DraftMedication): string[] {
       return errors
     }
     case 3: {
-      if (!isPositiveNumber(draft.inventoryCurrentQty)) errors.push('Current inventory quantity must be greater than 0.')
+      if (!isNonNegativeNumber(draft.inventoryCurrentQty)) errors.push('Current inventory quantity cannot be negative.')
       if (!draft.inventoryUnit) errors.push('Inventory unit is required.')
       if (draft.inventoryLowThreshold != null && draft.inventoryLowThreshold < 0) {
         errors.push('Low stock threshold cannot be negative.')
@@ -664,4 +664,8 @@ function getStepErrors(step: WizardStep, draft: DraftMedication): string[] {
 
 function isPositiveNumber(value?: number): boolean {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
+}
+
+function isNonNegativeNumber(value?: number): boolean {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
