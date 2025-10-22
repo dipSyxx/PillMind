@@ -95,6 +95,11 @@ export type DoseLog = {
   status: DoseStatus
   quantity?: number | null
   unit?: Unit | null
+  prescription?: (Prescription & {
+    medication?: (Medication & { inventory?: Inventory | null }) | null
+    provider?: CareProvider | null
+  }) | null
+  schedule?: Schedule | null
 }
 
 export type DraftMedication = {

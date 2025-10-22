@@ -251,17 +251,51 @@ export class MedicationService {
     if (options?.updateInventory && doseLog.prescription?.medication?.inventory) {
       try {
         const currentInventory = doseLog.prescription.medication.inventory
-        const newQuantity = Math.max(0, currentInventory.currentQty - (options.quantity || 1))
+        const currentQtyNumber = Number(currentInventory.currentQty ?? 0)
+        const rawQuantity =
+          options?.quantity ??
+          doseLog.quantity ??
+          doseLog.schedule?.doseQuantity ??
+          1
+        const resolvedQuantity = Number(rawQuantity)
+        const quantityToSubtract = Number.isFinite(resolvedQuantity) && resolvedQuantity > 0 ? resolvedQuantity : 0
 
-        await fetch(`${this.baseUrl}/medications/${doseLog.prescription.medication.id}/inventory`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentQty: newQuantity,
-            unit: currentInventory.unit,
-            lowThreshold: currentInventory.lowThreshold,
-          }),
-        })
+        if (doseLog.quantity == null && quantityToSubtract > 0) {
+          doseLog.quantity = quantityToSubtract
+        }
+
+        const newQuantity = Math.max(0, currentQtyNumber - quantityToSubtract)
+
+        const payload: Record<string, unknown> = {
+          currentQty: newQuantity,
+          unit: currentInventory.unit,
+        }
+
+        if (currentInventory.lowThreshold != null) {
+          const thresholdNumber = Number(currentInventory.lowThreshold)
+          if (Number.isFinite(thresholdNumber)) {
+            payload.lowThreshold = thresholdNumber
+          }
+        }
+        if (currentInventory.lastRestockedAt) {
+          payload.lastRestockedAt = currentInventory.lastRestockedAt
+        }
+
+        const inventoryResponse = await fetch(
+          `${this.baseUrl}/medications/${doseLog.prescription.medication.id}/inventory`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          },
+        )
+
+        if (inventoryResponse.ok) {
+          const updatedInventory = await inventoryResponse.json()
+          doseLog.prescription.medication.inventory = updatedInventory
+        } else {
+          console.warn('Inventory update failed when taking dose', await inventoryResponse.text())
+        }
       } catch (error) {
         console.warn('Failed to update inventory after taking dose:', error)
       }
@@ -378,17 +412,51 @@ export class MedicationService {
     if (options?.updateInventory && doseLog.prescription?.medication?.inventory) {
       try {
         const currentInventory = doseLog.prescription.medication.inventory
-        const newQuantity = Math.max(0, currentInventory.currentQty - (options.quantity || 1))
+        const currentQtyNumber = Number(currentInventory.currentQty ?? 0)
+        const rawQuantity =
+          options?.quantity ??
+          doseLog.quantity ??
+          doseLog.schedule?.doseQuantity ??
+          1
+        const resolvedQuantity = Number(rawQuantity)
+        const quantityToSubtract = Number.isFinite(resolvedQuantity) && resolvedQuantity > 0 ? resolvedQuantity : 0
 
-        await fetch(`${this.baseUrl}/medications/${doseLog.prescription.medication.id}/inventory`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            currentQty: newQuantity,
-            unit: currentInventory.unit,
-            lowThreshold: currentInventory.lowThreshold,
-          }),
-        })
+        if (doseLog.quantity == null && quantityToSubtract > 0) {
+          doseLog.quantity = quantityToSubtract
+        }
+
+        const newQuantity = Math.max(0, currentQtyNumber - quantityToSubtract)
+
+        const payload: Record<string, unknown> = {
+          currentQty: newQuantity,
+          unit: currentInventory.unit,
+        }
+
+        if (currentInventory.lowThreshold != null) {
+          const thresholdNumber = Number(currentInventory.lowThreshold)
+          if (Number.isFinite(thresholdNumber)) {
+            payload.lowThreshold = thresholdNumber
+          }
+        }
+        if (currentInventory.lastRestockedAt) {
+          payload.lastRestockedAt = currentInventory.lastRestockedAt
+        }
+
+        const inventoryResponse = await fetch(
+          `${this.baseUrl}/medications/${doseLog.prescription.medication.id}/inventory`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          },
+        )
+
+        if (inventoryResponse.ok) {
+          const updatedInventory = await inventoryResponse.json()
+          doseLog.prescription.medication.inventory = updatedInventory
+        } else {
+          console.warn('Inventory update failed when creating PRN dose', await inventoryResponse.text())
+        }
       } catch (error) {
         console.warn('Failed to update inventory after PRN dose:', error)
       }
@@ -425,15 +493,24 @@ export class MedicationService {
     const currentInventory = await currentResponse.json()
     const newQuantity = currentInventory.currentQty + data.quantity
 
+    const existingThreshold =
+      currentInventory.lowThreshold != null ? Number(currentInventory.lowThreshold) : undefined
+    const resolvedThreshold = data.updateThreshold ? data.newThreshold : existingThreshold
+
+    const restockPayload: Record<string, unknown> = {
+      currentQty: newQuantity,
+      unit: data.unit,
+      lastRestockedAt: new Date().toISOString(),
+    }
+
+    if (resolvedThreshold != null && Number.isFinite(Number(resolvedThreshold))) {
+      restockPayload.lowThreshold = Number(resolvedThreshold)
+    }
+
     const response = await fetch(`${this.baseUrl}/medications/${medicationId}/inventory`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        currentQty: newQuantity,
-        unit: data.unit,
-        lowThreshold: data.updateThreshold ? data.newThreshold : currentInventory.lowThreshold,
-        lastRestockedAt: new Date().toISOString(),
-      }),
+      body: JSON.stringify(restockPayload),
     })
 
     if (!response.ok) {

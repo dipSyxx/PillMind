@@ -61,7 +61,12 @@ export async function GET(request: NextRequest) {
       include: {
         prescription: {
           include: {
-            medication: true,
+            medication: {
+              include: {
+                inventory: true,
+              },
+            },
+            provider: true,
           },
         },
         schedule: true,
@@ -123,7 +128,12 @@ export async function POST(request: NextRequest) {
       include: {
         prescription: {
           include: {
-            medication: true,
+            medication: {
+              include: {
+                inventory: true,
+              },
+            },
+            provider: true,
           },
         },
         schedule: true,

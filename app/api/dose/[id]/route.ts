@@ -35,6 +35,25 @@ export async function PATCH(
       takenAt: takenAt ? new Date(takenAt) : null,
       scheduledFor: scheduledFor ? new Date(scheduledFor) : undefined,
     },
+    include: {
+      prescription: {
+        include: {
+          medication: {
+            include: {
+              inventory: true,
+            },
+          },
+          provider: true,
+        },
+      },
+      schedule: {
+        select: {
+          id: true,
+          doseQuantity: true,
+          doseUnit: true,
+        },
+      },
+    },
   })
 
   return NextResponse.json(updatedDoseLog)

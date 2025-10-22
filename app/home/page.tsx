@@ -44,6 +44,7 @@ export default function HomePage() {
     createPrescription,
     generateDoses,
     updateInventory,
+    updateMedication,
     initialize,
     setDoseLogs,
   } = useUserActions()
@@ -139,7 +140,15 @@ export default function HomePage() {
         notifyCareProvider: false, // Can be enabled based on user preferences
       })
 
-      // Update local state with any additional data
+      // Update local state with any additional data returned from service
+      if (result?.doseLog) {
+        updateDoseLog(doseLogId, { ...result.doseLog })
+        if (result.inventoryUpdated && result.doseLog.prescription?.medicationId) {
+          updateMedication(result.doseLog.prescription.medicationId, {
+            inventory: result.inventoryUpdated,
+          })
+        }
+      }
     } catch (error) {
       console.error('Failed to take dose:', error)
       // Revert optimistic update on error

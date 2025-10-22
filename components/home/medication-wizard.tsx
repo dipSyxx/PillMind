@@ -141,11 +141,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     }
     setSaving(true)
     try {
-      // TODO:
-      // 1) POST /api/medications (body: Medication fields)
-      // 2) POST /api/prescriptions (link to medicationId)
-      // 3) if !asNeeded -> POST /api/schedules
-      //    else -> optional POST /api/schedules for default doseQuantity/unit (no fixed times)
       onSaved(draft)
     } finally {
       setSaving(false)
@@ -370,7 +365,10 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 onValueChange={(v) => update('inventoryUnit', v as Unit)}
               >
                 <SelectTrigger
-                  className={cn('w-full', step3Touched && inventoryUnitMissing && 'border-red-400 focus-visible:ring-red-400')}
+                  className={cn(
+                    'w-full',
+                    step3Touched && inventoryUnitMissing && 'border-red-400 focus-visible:ring-red-400',
+                  )}
                 >
                   <SelectValue placeholder="Unit" />
                 </SelectTrigger>
@@ -455,7 +453,10 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               <label className="block text-sm font-medium text-[#334155] mb-1">Dose unit *</label>
               <Select value={draft.doseUnit} onValueChange={(v) => update('doseUnit', v as Unit)}>
                 <SelectTrigger
-                  className={cn('w-full', step4Touched && doseUnitMissing && 'border-red-400 focus-visible:ring-red-400')}
+                  className={cn(
+                    'w-full',
+                    step4Touched && doseUnitMissing && 'border-red-400 focus-visible:ring-red-400',
+                  )}
                 >
                   <SelectValue placeholder="Unit" />
                 </SelectTrigger>
@@ -477,7 +478,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 <div
                   className={cn(
                     'grid grid-cols-7 gap-1',
-                    step4Touched && scheduleDaysMissing && 'ring-1 ring-red-300 rounded-lg'
+                    step4Touched && scheduleDaysMissing && 'ring-1 ring-red-300 rounded-lg',
                   )}
                 >
                   {WEEKDAYS.map((w) => {

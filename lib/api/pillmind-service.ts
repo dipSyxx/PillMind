@@ -243,47 +243,26 @@ export class PillMindService {
         updateInventory: options?.updateInventory,
       })
 
-      let inventoryUpdated = null
+      let inventoryUpdated =
+        options?.updateInventory && doseLog.prescription?.medication?.inventory
+          ? doseLog.prescription.medication.inventory
+          : null
       let nextDoseScheduled = null
       let careProviderNotified = false
 
-      // Update inventory if requested
-      if (options?.updateInventory) {
-        // Get medication inventory from the dose log's prescription
-        const prescriptionResponse = await fetch(`/api/prescriptions/${doseLog.prescriptionId}`)
-        if (prescriptionResponse.ok) {
-          const prescription = await prescriptionResponse.json()
-          if (prescription.medication?.inventory) {
-            inventoryUpdated = prescription.medication.inventory
-          }
-        }
-      }
+      const prescription = doseLog.prescription
 
       // Reschedule next dose if requested (for PRN medications)
-      if (options?.rescheduleNext) {
-        // Get prescription to check if it's PRN
-        const prescriptionResponse = await fetch(`/api/prescriptions/${doseLog.prescriptionId}`)
-        if (prescriptionResponse.ok) {
-          const prescription = await prescriptionResponse.json()
-          if (prescription.asNeeded) {
-            // This would create a new scheduled dose for the next appropriate time
-            // Implementation depends on business logic
-          }
-        }
+      if (options?.rescheduleNext && prescription?.asNeeded) {
+        // This would create a new scheduled dose for the next appropriate time
+        // Implementation depends on business logic
       }
 
       // Notify care provider if requested
-      if (options?.notifyCareProvider) {
-        // Get prescription to check if it has a provider
-        const prescriptionResponse = await fetch(`/api/prescriptions/${doseLog.prescriptionId}`)
-        if (prescriptionResponse.ok) {
-          const prescription = await prescriptionResponse.json()
-          if (prescription.provider) {
-            // This would send a notification to the care provider
-            // Implementation depends on notification system
-            careProviderNotified = true
-          }
-        }
+      if (options?.notifyCareProvider && prescription?.provider) {
+        // This would send a notification to the care provider
+        // Implementation depends on notification system
+        careProviderNotified = true
       }
 
       return {
