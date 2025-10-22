@@ -12,7 +12,37 @@ export async function PATCH(
   }
 
   const body = await request.json()
-  const { status, takenAt, scheduledFor } = body
+  const { status, takenAt, scheduledFor, quantity, unit } = body
+
+  const updateData: any = {}
+
+  if (status !== undefined) {
+    updateData.status = status
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'takenAt')) {
+    updateData.takenAt = takenAt ? new Date(takenAt) : null
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'scheduledFor')) {
+    updateData.scheduledFor = scheduledFor ? new Date(scheduledFor) : null
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'quantity')) {
+    if (quantity === null || quantity === undefined) {
+      updateData.quantity = null
+    } else {
+      const parsedQuantity = Number(quantity)
+      if (!Number.isFinite(parsedQuantity)) {
+        return NextResponse.json({ error: 'Invalid quantity value' }, { status: 400 })
+      }
+      updateData.quantity = parsedQuantity
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'unit')) {
+    updateData.unit = unit ?? null
+  }
 
   // Verify that the dose log belongs to the user
   const doseLog = await prisma.doseLog.findFirst({
@@ -28,13 +58,13 @@ export async function PATCH(
     return NextResponse.json({ error: 'Dose log not found' }, { status: 404 })
   }
 
+  if (Object.keys(updateData).length === 0) {
+    return NextResponse.json({ error: 'No update fields provided' }, { status: 400 })
+  }
+
   const updatedDoseLog = await prisma.doseLog.update({
     where: { id: params.id },
-    data: {
-      status,
-      takenAt: takenAt ? new Date(takenAt) : null,
-      scheduledFor: scheduledFor ? new Date(scheduledFor) : undefined,
-    },
+    data: updateData,
     include: {
       prescription: {
         include: {

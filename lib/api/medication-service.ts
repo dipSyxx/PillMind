@@ -98,6 +98,16 @@ export class MedicationService {
       updates.inventory = await inventoryResponse.json()
     }
 
+    if (!updates.medication) {
+      const medicationResponse = await fetch(`${this.baseUrl}/medications/${medicationId}`)
+      if (!medicationResponse.ok) {
+        const error = await medicationResponse.json()
+        throw new Error(error.error || 'Failed to fetch medication')
+      }
+
+      updates.medication = await medicationResponse.json()
+    }
+
     return { ...updates.medication, inventory: updates.inventory }
   }
 
