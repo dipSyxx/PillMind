@@ -1,23 +1,23 @@
+import { DoseLog, DoseStatus, TimeFormat, Weekday } from '@/types/medication'
 import {
-  format,
-  startOfWeek as dateFnsStartOfWeek,
   addDays,
-  isSameDay,
-  isBefore,
-  isAfter,
-  startOfDay,
-  parseISO,
-  getDay,
-  setHours,
-  setMinutes,
-  setSeconds,
-  setMilliseconds,
   addMinutes,
   addDays as dateFnsAddDays,
-  startOfDay as dateFnsStartOfDay
+  startOfDay as dateFnsStartOfDay,
+  startOfWeek as dateFnsStartOfWeek,
+  format,
+  getDay,
+  isAfter,
+  isBefore,
+  isSameDay,
+  parseISO,
+  setHours,
+  setMilliseconds,
+  setMinutes,
+  setSeconds,
+  startOfDay,
 } from 'date-fns'
-import { formatInTimeZone, toZonedTime, fromZonedTime } from 'date-fns-tz'
-import { DoseLog, DoseStatus, TimeFormat, Weekday } from '@/types/medication'
+import { fromZonedTime, toZonedTime } from 'date-fns-tz'
 
 // Custom startOfWeek that starts on Monday (weekStartsOn: 1)
 export function startOfWeek(date: Date): Date {
@@ -177,7 +177,7 @@ export const weekdayLabelShort: Record<Weekday, string> = {
 }
 
 // Re-export date-fns functions with consistent naming
-export { addDays, isSameDay }
+export { addDays, addMinutes, isSameDay }
 
 export function formatDayKey(d: Date) {
   return format(d, 'yyyy-MM-dd')
@@ -190,9 +190,7 @@ export function formatHumanDate(d: Date) {
 
 export function toLocalHM(isoUtc: string, timeFormat: TimeFormat) {
   const dt = parseISO(isoUtc)
-  return timeFormat === 'H12'
-    ? format(dt, 'h:mm a')
-    : format(dt, 'HH:mm')
+  return timeFormat === 'H12' ? format(dt, 'h:mm a') : format(dt, 'HH:mm')
 }
 
 export function hmToLocalTodayISO(hm: string) {
