@@ -140,8 +140,29 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     }
   }
 
+  // Handle input focus to scroll into view on mobile
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    // Small delay to ensure keyboard is open
+    setTimeout(() => {
+      const input = e.target
+      const scrollContainer = input.closest('.overflow-y-auto')
+      if (scrollContainer) {
+        const inputRect = input.getBoundingClientRect()
+        const containerRect = scrollContainer.getBoundingClientRect()
+        const scrollTop = scrollContainer.scrollTop
+        const inputOffsetTop = inputRect.top - containerRect.top + scrollTop
+
+        // Scroll to center the input in the visible area
+        scrollContainer.scrollTo({
+          top: inputOffsetTop - containerRect.height / 2 + inputRect.height / 2,
+          behavior: 'smooth',
+        })
+      }
+    }, 300)
+  }
+
   return (
-    <div className="flex flex-col h-full max-h-[80vh]">
+    <div className="flex flex-col h-full max-h-[80dvh] sm:max-h-[80vh]">
       <div className="flex-shrink-0">
         <DrawerHeader>
           <DrawerTitle className="text-lg sm:text-xl">
@@ -186,11 +207,13 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               aria-invalid={step1Touched && medicationNameMissing ? 'true' : undefined}
               className={cn(step1Touched && medicationNameMissing && 'border-red-400 focus-visible:ring-red-400')}
               onChange={(e) => update('name', e.target.value)}
+              onFocus={handleInputFocus}
             />
             <Input
               label="Brand name (optional)"
               value={draft.brandName}
               onChange={(e) => update('brandName', e.target.value)}
+              onFocus={handleInputFocus}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
               <div>
@@ -240,6 +263,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   const value = e.target.value
                   update('strengthValue', value ? Number(value) : undefined)
                 }}
+                onFocus={handleInputFocus}
               />
               <div>
                 <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Unit *</label>
@@ -261,6 +285,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 placeholder="e.g., take with food"
                 value={draft.notes}
                 onChange={(e) => update('notes', e.target.value)}
+                onFocus={handleInputFocus}
               />
             </div>
 
@@ -304,6 +329,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               placeholder="e.g., Diabetes"
               value={draft.indication}
               onChange={(e) => update('indication', e.target.value)}
+              onFocus={handleInputFocus}
             />
             <Input
               label="Instructions *"
@@ -313,6 +339,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               aria-invalid={step2Touched && instructionsMissing ? 'true' : undefined}
               className={cn(step2Touched && instructionsMissing && 'border-red-400 focus-visible:ring-red-400')}
               onChange={(e) => update('instructions', e.target.value)}
+              onFocus={handleInputFocus}
             />
             {draft.asNeeded && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
@@ -330,6 +357,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                     const value = e.target.value
                     update('maxDailyDose', value ? Number(value) : undefined)
                   }}
+                  onFocus={handleInputFocus}
                 />
                 <div className="p-3 sm:p-3 border border-[#E2E8F0] rounded-xl text-xs text-[#64748B] bg-[#F8FAFC]">
                   PRN has no fixed times. You can still set default dose amount on next step.
@@ -375,6 +403,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   const value = e.target.value
                   update('inventoryCurrentQty', value ? Number(value) : undefined)
                 }}
+                onFocus={handleInputFocus}
               />
               <div>
                 <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Inventory unit *</label>
@@ -413,6 +442,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 const value = e.target.value
                 update('inventoryLowThreshold', value ? Number(value) : undefined)
               }}
+              onFocus={handleInputFocus}
             />
 
             <Input
@@ -423,6 +453,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 const value = e.target.value
                 update('inventoryLastRestockedAt', value ? new Date(`${value}T00:00:00`).toISOString() : undefined)
               }}
+              onFocus={handleInputFocus}
             />
 
             <div className="p-3 sm:p-3 border border-[#E2E8F0] rounded-xl bg-[#F8FAFC] text-xs text-[#64748B]">
@@ -474,6 +505,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   const value = e.target.value
                   update('doseQuantity', value ? Number(value) : undefined)
                 }}
+                onFocus={handleInputFocus}
               />
               <div>
                 <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Dose unit *</label>
@@ -541,6 +573,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                     onChange={(arr) => update('times', arr)}
                     placeholder="08:00, 20:00"
                     invalid={step4Touched && scheduleTimesMissing}
+                    onInputFocus={handleInputFocus}
                   />
                   <p className="text-xs text-[#64748B] mt-1">Timezone: {timezone}</p>
                 </div>
@@ -612,11 +645,13 @@ function TimesEditor({
   onChange,
   placeholder,
   invalid = false,
+  onInputFocus,
 }: {
   value: string[]
   onChange: (v: string[]) => void
   placeholder?: string
   invalid?: boolean
+  onInputFocus?: (e: React.FocusEvent<HTMLInputElement>) => void
 }) {
   const [draft, setDraft] = useState(value.join(', '))
   useEffect(() => setDraft(value.join(', ')), [value])
@@ -645,6 +680,7 @@ function TimesEditor({
         placeholder={placeholder}
         className={cn('flex-1', invalid && 'border-red-400 focus-visible:ring-red-400')}
         aria-invalid={invalid ? 'true' : undefined}
+        onFocus={onInputFocus}
       />
       <Button variant="pillmindOutline" onClick={apply} className="rounded-xl h-11 sm:h-10 w-full sm:w-auto">
         Apply
