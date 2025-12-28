@@ -1,27 +1,30 @@
 'use client'
 
-import React, { useMemo, useState, useEffect } from 'react'
-import { CalendarDays, Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer'
 import {
+  BottomNavigation,
+  DaySchedule,
+  LowStockAlerts,
+  MedicationWizard,
+  PrnQuickActions,
+  SnoozeDialog,
   WeekNavigation,
   WeeklySummary,
-  LowStockAlerts,
-  PrnQuickActions,
-  DaySchedule,
-  MedicationWizard,
-  BottomNavigation,
-  SnoozeDialog,
 } from '@/components/home'
-import { DoseLog, UserSettings } from '@/types/medication'
-import { dayKeyInTz, statusByDay, canInteractWithDose, startOfWeek, addDays, isTodayInTz } from '@/lib/medication-utils'
-import { addMinutes, compareAsc, parseISO } from 'date-fns'
-import { useUserData, useUserActions } from '@/hooks/useUserStore'
+import { LogsPage } from '@/components/home/logs-page'
+import { MedsPage } from '@/components/home/meds-page'
+import { ProfileTab } from '@/components/home/profile-tab'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
-import { pillMindService } from '@/lib/api/pillmind-service'
-import { medicationService } from '@/lib/api/medication-service'
+import { Button } from '@/components/ui/button'
+import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer'
+import { useUserActions, useUserData } from '@/hooks/useUserStore'
 import { analyticsService } from '@/lib/api/analytics-service'
+import { medicationService } from '@/lib/api/medication-service'
+import { pillMindService } from '@/lib/api/pillmind-service'
+import { addDays, dayKeyInTz, isTodayInTz, startOfWeek, statusByDay } from '@/lib/medication-utils'
+import { DoseLog, UserSettings } from '@/types/medication'
+import { addMinutes, compareAsc, parseISO } from 'date-fns'
+import { CalendarDays, Plus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 /* =============================================================================
    HOME PAGE
@@ -312,196 +315,223 @@ export default function HomePage() {
 
   return (
     <div className="min-h-dvh bg-gradient-to-b from-[#F8FAFC] to-[#E2E8F0] pb-[88px]">
-      {/* Header */}
-      <div className="px-4 pt-6 pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-[#0F172A]">PillMind</h1>
-            <p className="text-sm text-[#64748B]">Stay on track with your meds</p>
+      {/* Conditional rendering based on active tab */}
+      {activeTab === 'home' && (
+        <>
+          {/* Header */}
+          <div className="px-4 pt-6 pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-[#0F172A]">PillMind</h1>
+                <p className="text-sm text-[#64748B]">Stay on track with your meds</p>
+              </div>
+              <Button
+                variant="pillmindGhost"
+                size="sm"
+                className="rounded-xl"
+                onClick={async () => {
+                  try {
+                    // Get comprehensive weekly report with advanced analytics
+                    const weekStart = startOfWeek(selectedDate)
+                    const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
+
+                    const weeklyReport = await analyticsService.getWeeklyReport(weekStart.toISOString())
+
+                    // Get dashboard data
+                    const dashboardData = await fetch('/api/dashboard').then((res) => res.json())
+
+                    // Get comprehensive report with all features
+                    const comprehensiveReport = await pillMindService.generateComprehensiveReport({
+                      from: weekStart.toISOString(),
+                      to: weekEnd.toISOString(),
+                      includeAnalytics: true,
+                      includeInventory: true,
+                      includePredictions: true,
+                      includeRecommendations: true,
+                    })
+
+                    // You can show this data in a modal or navigate to a dashboard page
+                    alert(
+                      `Weekly Adherence: ${weeklyReport.overallMetrics.adherenceRate}%\nInsights: ${weeklyReport.insights.join(', ')}`,
+                    )
+                  } catch (error) {
+                    console.error('Failed to fetch analytics data:', error)
+                  }
+                }}
+              >
+                <CalendarDays className="w-4 h-4 mr-2" />
+                This week
+              </Button>
+            </div>
           </div>
-          <Button
-            variant="pillmindGhost"
-            size="sm"
-            className="rounded-xl"
-            onClick={async () => {
-              try {
-                // Get comprehensive weekly report with advanced analytics
-                const weekStart = startOfWeek(selectedDate)
-                const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
 
-                const weeklyReport = await analyticsService.getWeeklyReport(weekStart.toISOString())
-
-                // Get dashboard data
-                const dashboardData = await fetch('/api/dashboard').then((res) => res.json())
-
-                // Get comprehensive report with all features
-                const comprehensiveReport = await pillMindService.generateComprehensiveReport({
-                  from: weekStart.toISOString(),
-                  to: weekEnd.toISOString(),
-                  includeAnalytics: true,
-                  includeInventory: true,
-                  includePredictions: true,
-                  includeRecommendations: true,
-                })
-
-                // You can show this data in a modal or navigate to a dashboard page
-                alert(
-                  `Weekly Adherence: ${weeklyReport.overallMetrics.adherenceRate}%\nInsights: ${weeklyReport.insights.join(', ')}`,
-                )
-              } catch (error) {
-                console.error('Failed to fetch analytics data:', error)
-              }
+          {/* Week Navigation */}
+          <WeekNavigation
+            selectedDate={selectedDate}
+            onDateChange={(newDate) => {
+              setSelectedDate(newDate)
+              // Load dose logs for the new week
+              const newWeekStart = startOfWeek(newDate)
+              loadWeekDoseLogs(newWeekStart)
             }}
-          >
-            <CalendarDays className="w-4 h-4 mr-2" />
-            This week
-          </Button>
-        </div>
-      </div>
-
-      {/* Week Navigation */}
-      <WeekNavigation
-        selectedDate={selectedDate}
-        onDateChange={(newDate) => {
-          setSelectedDate(newDate)
-          // Load dose logs for the new week
-          const newWeekStart = startOfWeek(newDate)
-          loadWeekDoseLogs(newWeekStart)
-        }}
-        dayProgress={dayProgress}
-      />
-
-      {/* Weekly summary + low stock + PRN */}
-      <div className="px-4 mt-4 space-y-3">
-        <WeeklySummary taken={taken} scheduled={scheduled} missed={missed} skipped={skipped} adherence={adherence} />
-
-        {lowStock.length > 0 && (
-          <LowStockAlerts
-            lowStock={lowStock}
-            onRefill={async (medicationId, newQuantity) => {
-              await updateInventory(medicationId, {
-                currentQty: newQuantity,
-                lastRestockedAt: new Date().toISOString(),
-              })
-            }}
+            dayProgress={dayProgress}
           />
-        )}
 
-        {prnPrescriptions.length > 0 && <PrnQuickActions prnPrescriptions={prnPrescriptions} onTakeNow={prnTakeNow} />}
-      </div>
+          {/* Weekly summary + low stock + PRN */}
+          <div className="px-4 mt-4 space-y-3">
+            <WeeklySummary
+              taken={taken}
+              scheduled={scheduled}
+              missed={missed}
+              skipped={skipped}
+              adherence={adherence}
+            />
 
-      {/* Day Schedule */}
-      {dayLogs.length > 0 && (
-        <DaySchedule
-          dayLogs={dayLogs}
-          timeFormat={userSettings?.timeFormat || 'H24'}
-          onTakeDose={takeDose}
-          onSkipDose={skipDose}
-          onSnoozeDose={setSnoozeFor}
-          getMedicationName={(medicationId) => {
-            if (!medicationId) {
-              return 'Unknown Medication'
-            }
+            {lowStock.length > 0 && (
+              <LowStockAlerts
+                lowStock={lowStock}
+                onRefill={async (medicationId, newQuantity) => {
+                  await updateInventory(medicationId, {
+                    currentQty: newQuantity,
+                    lastRestockedAt: new Date().toISOString(),
+                  })
+                }}
+              />
+            )}
 
-            // Find medication directly from store
-            const medication = medById[medicationId]
-            if (medication) {
-              return medication.name
-            }
+            {prnPrescriptions.length > 0 && (
+              <PrnQuickActions prnPrescriptions={prnPrescriptions} onTakeNow={prnTakeNow} />
+            )}
+          </div>
 
-            // If not found directly, try to find through prescriptions
-            const prescription = Object.values(rxById).find((rx) => rx.medicationId === medicationId)
-            if (prescription) {
-              const med = medById[prescription.medicationId]
-              return med?.name || 'Unknown Medication'
-            }
+          {/* Day Schedule */}
+          {dayLogs.length > 0 && (
+            <DaySchedule
+              dayLogs={dayLogs}
+              timeFormat={userSettings?.timeFormat || 'H24'}
+              onTakeDose={takeDose}
+              onSkipDose={skipDose}
+              onSnoozeDose={setSnoozeFor}
+              getMedicationName={(medicationId) => {
+                if (!medicationId) {
+                  return 'Unknown Medication'
+                }
 
-            // Try to find medication from dose logs data
-            const doseLogWithMed = userDoseLogs.find(
-              (dl: any) => (dl as any).prescription?.medicationId === medicationId,
-            )
-            if ((doseLogWithMed as any)?.prescription?.medication) {
-              return (doseLogWithMed as any).prescription.medication.name
-            }
+                // Find medication directly from store
+                const medication = medById[medicationId]
+                if (medication) {
+                  return medication.name
+                }
 
-            return `Unknown Medication (${medicationId.slice(-6)})`
-          }}
-          getPrescription={(prescriptionId) => rxById[prescriptionId]}
-          canInteractWithDose={(doseLog) => isTodayInTz(new Date(doseLog.scheduledFor), userSettings.timezone)}
-          getStatusByDay={(doseLog) => statusByDay(doseLog, userSettings.timezone)}
-          selectedDate={selectedDate}
-        />
+                // If not found directly, try to find through prescriptions
+                const prescription = Object.values(rxById).find((rx) => rx.medicationId === medicationId)
+                if (prescription) {
+                  const med = medById[prescription.medicationId]
+                  return med?.name || 'Unknown Medication'
+                }
+
+                // Try to find medication from dose logs data
+                const doseLogWithMed = userDoseLogs.find(
+                  (dl: any) => (dl as any).prescription?.medicationId === medicationId,
+                )
+                if ((doseLogWithMed as any)?.prescription?.medication) {
+                  return (doseLogWithMed as any).prescription.medication.name
+                }
+
+                return `Unknown Medication (${medicationId.slice(-6)})`
+              }}
+              getPrescription={(prescriptionId) => rxById[prescriptionId]}
+              canInteractWithDose={(doseLog) => isTodayInTz(new Date(doseLog.scheduledFor), userSettings.timezone)}
+              getStatusByDay={(doseLog) => statusByDay(doseLog, userSettings.timezone)}
+              selectedDate={selectedDate}
+            />
+          )}
+
+          {/* Snooze Dialog */}
+          {snoozeFor && <SnoozeDialog snoozeFor={snoozeFor} onClose={() => setSnoozeFor(null)} onSnooze={snoozeDose} />}
+        </>
       )}
 
-      {/* Snooze Dialog */}
-      {snoozeFor && <SnoozeDialog snoozeFor={snoozeFor} onClose={() => setSnoozeFor(null)} onSnooze={snoozeDose} />}
+      {activeTab === 'meds' && (
+        <MedsPage timezone={userSettings.timezone} timeFormat={userSettings?.timeFormat || 'H24'} />
+      )}
 
-      {/* Add Medication Wizard */}
-      <Drawer open={isAddOpen} onOpenChange={setIsAddOpen} direction="bottom">
-        <DrawerTrigger asChild>
-          <button className="fixed bottom-[90px] left-1/2 -translate-x-1/2 z-40 bg-[#0EA8BC] text-white rounded-full w-14 h-14 shadow-[0_10px_30px_rgba(14,168,188,0.4)] active:scale-95 transition">
-            <Plus className="w-6 h-6 mx-auto" />
-            <span className="sr-only">Add medication</span>
-          </button>
-        </DrawerTrigger>
+      {activeTab === 'logs' && (
+        <LogsPage timezone={userSettings.timezone} timeFormat={userSettings?.timeFormat || 'H24'} />
+      )}
 
-        <DrawerContent className="p-0">
-          <MedicationWizard
-            mode="create"
-            onClose={() => setIsAddOpen(false)}
-            onSaved={async (draft) => {
-              try {
-                // Use complete medication workflow with advanced features
-                const workflow = await pillMindService.setupCompleteMedicationWorkflow({
-                  medication: {
-                    name: draft.name,
-                    brandName: draft.brandName,
-                    form: draft.form,
-                    strengthValue: draft.strengthValue,
-                    strengthUnit: draft.strengthUnit,
-                    route: draft.route,
-                    notes: draft.notes,
-                  },
-                  inventory: {
-                    currentQty: draft.inventoryCurrentQty ?? 0,
-                    unit: draft.inventoryUnit || draft.doseUnit || 'TAB',
-                    lowThreshold: draft.inventoryLowThreshold ?? undefined,
-                    lastRestockedAt: draft.inventoryLastRestockedAt,
-                  },
-                  prescription: {
-                    indication: draft.indication,
-                    asNeeded: draft.asNeeded,
-                    maxDailyDose: draft.maxDailyDose,
-                    instructions: draft.instructions,
-                    startDate: new Date().toISOString(),
-                  },
-                  schedule:
-                    !draft.asNeeded && draft.daysOfWeek && draft.times && userSettings
-                      ? {
-                          timezone: userSettings.timezone,
-                          daysOfWeek: draft.daysOfWeek,
-                          times: draft.times,
-                          doseQuantity: draft.doseQuantity || 1,
-                          doseUnit: draft.doseUnit || 'TAB',
-                        }
-                      : undefined,
-                  generateDosesForWeeks: !draft.asNeeded ? 4 : undefined, // Generate 4 weeks of doses
-                })
+      {activeTab === 'profile' && (
+        <ProfileTab timezone={userSettings.timezone} timeFormat={userSettings?.timeFormat || 'H24'} />
+      )}
 
-                // Refresh the store to get the new data
-                await initialize()
+      {/* Add Medication Wizard - shown only on home tab */}
+      {activeTab === 'home' && (
+        <Drawer open={isAddOpen} onOpenChange={setIsAddOpen} direction="bottom">
+          <DrawerTrigger asChild>
+            <button className="fixed bottom-[90px] left-1/2 -translate-x-1/2 z-40 bg-[#0EA8BC] text-white rounded-full w-14 h-14 shadow-[0_10px_30px_rgba(14,168,188,0.4)] active:scale-95 transition">
+              <Plus className="w-6 h-6 mx-auto" />
+              <span className="sr-only">Add medication</span>
+            </button>
+          </DrawerTrigger>
 
-                setIsAddOpen(false)
-              } catch (error) {
-                console.error('Failed to create medication workflow:', error)
-                // Error is already handled in the store
-              }
-            }}
-            timezone={userSettings.timezone}
-            timeFormat={userSettings?.timeFormat || 'H24'}
-          />
-        </DrawerContent>
-      </Drawer>
+          <DrawerContent className="p-0">
+            <MedicationWizard
+              mode="create"
+              onClose={() => setIsAddOpen(false)}
+              onSaved={async (draft) => {
+                try {
+                  // Use complete medication workflow with advanced features
+                  const workflow = await pillMindService.setupCompleteMedicationWorkflow({
+                    medication: {
+                      name: draft.name,
+                      brandName: draft.brandName,
+                      form: draft.form,
+                      strengthValue: draft.strengthValue,
+                      strengthUnit: draft.strengthUnit,
+                      route: draft.route,
+                      notes: draft.notes,
+                    },
+                    inventory: {
+                      currentQty: draft.inventoryCurrentQty ?? 0,
+                      unit: draft.inventoryUnit || draft.doseUnit || 'TAB',
+                      lowThreshold: draft.inventoryLowThreshold ?? undefined,
+                      lastRestockedAt: draft.inventoryLastRestockedAt,
+                    },
+                    prescription: {
+                      indication: draft.indication,
+                      asNeeded: draft.asNeeded,
+                      maxDailyDose: draft.maxDailyDose,
+                      instructions: draft.instructions,
+                      startDate: new Date().toISOString(),
+                    },
+                    schedule:
+                      !draft.asNeeded && draft.daysOfWeek && draft.times && userSettings
+                        ? {
+                            timezone: userSettings.timezone,
+                            daysOfWeek: draft.daysOfWeek,
+                            times: draft.times,
+                            doseQuantity: draft.doseQuantity || 1,
+                            doseUnit: draft.doseUnit || 'TAB',
+                          }
+                        : undefined,
+                    generateDosesForWeeks: !draft.asNeeded ? 4 : undefined, // Generate 4 weeks of doses
+                  })
+
+                  // Refresh the store to get the new data
+                  await initialize()
+
+                  setIsAddOpen(false)
+                } catch (error) {
+                  console.error('Failed to create medication workflow:', error)
+                  // Error is already handled in the store
+                }
+              }}
+              timezone={userSettings.timezone}
+              timeFormat={userSettings?.timeFormat || 'H24'}
+            />
+          </DrawerContent>
+        </Drawer>
+      )}
 
       {/* Bottom Navigation */}
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />

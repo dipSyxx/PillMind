@@ -1,23 +1,16 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
-import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { Input } from '@/components/ui/input'
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
-} from '@/components/ui/drawer'
-import { cn } from '@/lib/utils'
-import { DraftMedication, MedForm, RouteKind, Unit, Weekday, TimeFormat } from '@/types/medication'
 import { WEEKDAYS, weekdayLabelShort } from '@/lib/medication-utils'
+import { cn } from '@/lib/utils'
+import { DraftMedication, MedForm, RouteKind, TimeFormat, Unit, Weekday } from '@/types/medication'
 import { format } from 'date-fns'
+import { Check } from 'lucide-react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 const FORM_OPTIONS: MedForm[] = ['TABLET', 'CAPSULE', 'LIQUID', 'INJECTION', 'INHALER', 'TOPICAL', 'DROPS', 'OTHER']
 const ROUTE_OPTIONS: RouteKind[] = [
@@ -148,393 +141,436 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
   }
 
   return (
-    <div className="p-4 space-y-4">
-      <DrawerHeader>
-        <DrawerTitle>{mode === 'create' ? 'Add medication' : 'Edit medication'}</DrawerTitle>
-        <DrawerDescription>Complete 4 quick steps to configure medication, reminders, and inventory.</DrawerDescription>
-      </DrawerHeader>
+    <div className="flex flex-col h-full max-h-[80vh]">
+      <div className="flex-shrink-0">
+        <DrawerHeader>
+          <DrawerTitle className="text-lg sm:text-xl">
+            {mode === 'create' ? 'Add medication' : 'Edit medication'}
+          </DrawerTitle>
+          <DrawerDescription className="text-sm">
+            Complete 4 quick steps to configure medication, reminders, and inventory.
+          </DrawerDescription>
+        </DrawerHeader>
 
-      {/* Steps */}
-      <div className="flex items-center justify-center gap-2 text-xs">
-        <StepDot done={step > 1} active={step === 1}>
-          Medication
-        </StepDot>
-        <StepDot done={step > 2} active={step === 2}>
-          Prescription
-        </StepDot>
-        <StepDot done={step > 3} active={step === 3}>
-          Inventory
-        </StepDot>
-        <StepDot done={step > 4} active={step === 4}>
-          Schedule
-        </StepDot>
+        {/* Steps */}
+        <div className="px-4 sm:px-6 pb-4">
+          <div className="flex items-center justify-center gap-1 sm:gap-2 text-[10px] sm:text-xs flex-wrap">
+            <StepDot done={step > 1} active={step === 1}>
+              <span className="hidden sm:inline">Medication</span>
+              <span className="sm:hidden">Med</span>
+            </StepDot>
+            <StepDot done={step > 2} active={step === 2}>
+              <span className="hidden sm:inline">Prescription</span>
+              <span className="sm:hidden">Rx</span>
+            </StepDot>
+            <StepDot done={step > 3} active={step === 3}>
+              <span className="hidden sm:inline">Inventory</span>
+              <span className="sm:hidden">Stock</span>
+            </StepDot>
+            <StepDot done={step > 4} active={step === 4}>
+              <span className="hidden sm:inline">Schedule</span>
+              <span className="sm:hidden">Time</span>
+            </StepDot>
+          </div>
+        </div>
       </div>
 
-      {step === 1 && (
-        <div className="space-y-3">
-          <Input
-            label="Name *"
-            placeholder="e.g., Metformin"
-            value={draft.name}
-            required
-            aria-invalid={step1Touched && medicationNameMissing ? 'true' : undefined}
-            className={cn(step1Touched && medicationNameMissing && 'border-red-400 focus-visible:ring-red-400')}
-            onChange={(e) => update('name', e.target.value)}
-          />
-          <Input
-            label="Brand name (optional)"
-            value={draft.brandName}
-            onChange={(e) => update('brandName', e.target.value)}
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-sm font-medium text-[#334155] mb-1">Form *</label>
-              <Select value={draft.form} onValueChange={(v) => update('form', v as MedForm)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select form" />
-                </SelectTrigger>
-                <SelectContent>
-                  {FORM_OPTIONS.map((f) => (
-                    <SelectItem key={f} value={f}>
-                      {f}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#334155] mb-1">Route *</label>
-              <Select value={draft.route} onValueChange={(v) => update('route', v as RouteKind)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select route" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROUTE_OPTIONS.map((r) => (
-                    <SelectItem key={r} value={r}>
-                      {r}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+        {step === 1 && (
+          <div className="space-y-4 sm:space-y-3">
             <Input
-              label="Strength *"
-              type="number"
-              placeholder="500"
-              value={draft.strengthValue ?? ''}
-              min={0}
-              step="any"
+              label="Name *"
+              placeholder="e.g., Metformin"
+              value={draft.name}
               required
-              aria-invalid={step1Touched && strengthInvalid ? 'true' : undefined}
-              className={cn(step1Touched && strengthInvalid && 'border-red-400 focus-visible:ring-red-400')}
-              onChange={(e) => {
-                const value = e.target.value
-                update('strengthValue', value ? Number(value) : undefined)
-              }}
+              aria-invalid={step1Touched && medicationNameMissing ? 'true' : undefined}
+              className={cn(step1Touched && medicationNameMissing && 'border-red-400 focus-visible:ring-red-400')}
+              onChange={(e) => update('name', e.target.value)}
             />
-            <div>
-              <label className="block text-sm font-medium text-[#334155] mb-1">Unit *</label>
-              <Select value={draft.strengthUnit} onValueChange={(v) => update('strengthUnit', v as Unit)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {UNIT_OPTIONS.map((u) => (
-                    <SelectItem key={u} value={u}>
-                      {u}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
             <Input
-              label="Notes"
-              placeholder="e.g., take with food"
-              value={draft.notes}
-              onChange={(e) => update('notes', e.target.value)}
+              label="Brand name (optional)"
+              value={draft.brandName}
+              onChange={(e) => update('brandName', e.target.value)}
             />
-          </div>
-
-          {showStep1Errors && <ValidationErrors messages={step1Errors} />}
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="pillmindWhite" onClick={onClose} className="rounded-xl">
-              Cancel
-            </Button>
-            <Button variant="pillmind" onClick={() => handleNext(1, 2)} className="rounded-xl">
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-      {step === 2 && (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 border border-[#E2E8F0] rounded-xl bg-white">
-            <div>
-              <div className="text-sm font-medium text-[#0F172A]">As needed (PRN)</div>
-              <div className="text-xs text-[#64748B]">Enable for non-scheduled, on-demand intake</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
+              <div>
+                <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Form *</label>
+                <Select value={draft.form} onValueChange={(v) => update('form', v as MedForm)}>
+                  <SelectTrigger className="w-full h-11 sm:h-10">
+                    <SelectValue placeholder="Select form" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FORM_OPTIONS.map((f) => (
+                      <SelectItem key={f} value={f}>
+                        {f}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Route *</label>
+                <Select value={draft.route} onValueChange={(v) => update('route', v as RouteKind)}>
+                  <SelectTrigger className="w-full h-11 sm:h-10">
+                    <SelectValue placeholder="Select route" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ROUTE_OPTIONS.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <Switch
-              checked={draft.asNeeded}
-              onCheckedChange={(v) => {
-                const value = !!v
-                update('asNeeded', value)
-                if (!value) {
-                  update('maxDailyDose', undefined)
-                }
-              }}
-            />
-          </div>
 
-          <Input
-            label="Indication (optional)"
-            placeholder="e.g., Diabetes"
-            value={draft.indication}
-            onChange={(e) => update('indication', e.target.value)}
-          />
-          <Input
-            label="Instructions *"
-            placeholder="e.g., 1 tab twice daily"
-            value={draft.instructions}
-            required
-            aria-invalid={step2Touched && instructionsMissing ? 'true' : undefined}
-            className={cn(step2Touched && instructionsMissing && 'border-red-400 focus-visible:ring-red-400')}
-            onChange={(e) => update('instructions', e.target.value)}
-          />
-          {draft.asNeeded && (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-2">
               <Input
-                label="Max/day *"
+                label="Strength *"
                 type="number"
-                placeholder="e.g., 6"
-                value={draft.maxDailyDose ?? ''}
-                min={1}
-                step="1"
+                placeholder="500"
+                value={draft.strengthValue ?? ''}
+                min={0}
+                step="any"
                 required
-                aria-invalid={step2Touched && maxDailyDoseInvalid ? 'true' : undefined}
-                className={cn(step2Touched && maxDailyDoseInvalid && 'border-red-400 focus-visible:ring-red-400')}
+                aria-invalid={step1Touched && strengthInvalid ? 'true' : undefined}
+                className={cn(step1Touched && strengthInvalid && 'border-red-400 focus-visible:ring-red-400')}
                 onChange={(e) => {
                   const value = e.target.value
-                  update('maxDailyDose', value ? Number(value) : undefined)
+                  update('strengthValue', value ? Number(value) : undefined)
                 }}
               />
-              <div className="p-3 border border-[#E2E8F0] rounded-xl text-xs text-[#64748B] bg-[#F8FAFC]">
-                PRN has no fixed times. You can still set default dose amount on next step.
-              </div>
-            </div>
-          )}
-
-          {showStep2Errors && <ValidationErrors messages={step2Errors} />}
-
-          <div className="flex justify-between pt-2">
-            <Button variant="pillmindWhite" onClick={() => setStep(1)} className="rounded-xl">
-              Back
-            </Button>
-            <Button variant="pillmind" onClick={() => handleNext(2, 3)} className="rounded-xl">
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {step === 3 && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              label="Current quantity *"
-              type="number"
-              placeholder="e.g., 30"
-              value={draft.inventoryCurrentQty ?? ''}
-              min={0}
-              step="any"
-              required
-              aria-invalid={step3Touched && inventoryQtyInvalid ? 'true' : undefined}
-              className={cn(step3Touched && inventoryQtyInvalid && 'border-red-400 focus-visible:ring-red-400')}
-              onChange={(e) => {
-                const value = e.target.value
-                update('inventoryCurrentQty', value ? Number(value) : undefined)
-              }}
-            />
-            <div>
-              <label className="block text-sm font-medium text-[#334155] mb-1">Inventory unit *</label>
-              <Select
-                value={draft.inventoryUnit ?? draft.doseUnit ?? 'TAB'}
-                onValueChange={(v) => update('inventoryUnit', v as Unit)}
-              >
-                <SelectTrigger
-                  className={cn(
-                    'w-full',
-                    step3Touched && inventoryUnitMissing && 'border-red-400 focus-visible:ring-red-400',
-                  )}
-                >
-                  <SelectValue placeholder="Unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {UNIT_OPTIONS.map((u) => (
-                    <SelectItem key={u} value={u}>
-                      {u}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <Input
-            label="Low stock threshold (optional)"
-            type="number"
-            placeholder="e.g., 10"
-            value={draft.inventoryLowThreshold ?? ''}
-            min={0}
-            aria-invalid={step3Touched && inventoryThresholdInvalid ? 'true' : undefined}
-            className={cn(step3Touched && inventoryThresholdInvalid && 'border-red-400 focus-visible:ring-red-400')}
-            onChange={(e) => {
-              const value = e.target.value
-              update('inventoryLowThreshold', value ? Number(value) : undefined)
-            }}
-          />
-
-          <Input
-            label="Last restocked (optional)"
-            type="date"
-            value={restockedDateInputValue}
-            onChange={(e) => {
-              const value = e.target.value
-              update('inventoryLastRestockedAt', value ? new Date(`${value}T00:00:00`).toISOString() : undefined)
-            }}
-          />
-
-          <div className="p-3 border border-[#E2E8F0] rounded-xl bg-[#F8FAFC] text-xs text-[#64748B]">
-            <p>
-              Track remaining supply to trigger low stock alerts and plan refills in time.
-              {estimatedDosesRemaining != null && effectiveDoseQuantity ? (
-                <span className="block text-[#0F172A] mt-1">
-                  Approx. {estimatedDosesRemaining} doses left at {effectiveDoseQuantity}{' '}
-                  {draft.doseUnit ?? draft.inventoryUnit ?? 'unit'} per dose.
-                </span>
-              ) : null}
-            </p>
-          </div>
-
-          {showStep3Errors && <ValidationErrors messages={step3Errors} />}
-
-          <div className="flex justify-between pt-2">
-            <Button variant="pillmindWhite" onClick={() => setStep(2)} className="rounded-xl">
-              Back
-            </Button>
-            <Button variant="pillmind" onClick={() => handleNext(3, 4)} className="rounded-xl">
-              Next
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {step === 4 && (
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              label="Dose quantity *"
-              type="number"
-              value={draft.doseQuantity ?? ''}
-              min={0}
-              step="any"
-              required
-              aria-invalid={step4Touched && doseQuantityInvalid ? 'true' : undefined}
-              className={cn(step4Touched && doseQuantityInvalid && 'border-red-400 focus-visible:ring-red-400')}
-              onChange={(e) => {
-                const value = e.target.value
-                update('doseQuantity', value ? Number(value) : undefined)
-              }}
-            />
-            <div>
-              <label className="block text-sm font-medium text-[#334155] mb-1">Dose unit *</label>
-              <Select value={draft.doseUnit} onValueChange={(v) => update('doseUnit', v as Unit)}>
-                <SelectTrigger
-                  className={cn(
-                    'w-full',
-                    step4Touched && doseUnitMissing && 'border-red-400 focus-visible:ring-red-400',
-                  )}
-                >
-                  <SelectValue placeholder="Unit" />
-                </SelectTrigger>
-                <SelectContent>
-                  {UNIT_OPTIONS.map((u) => (
-                    <SelectItem key={u} value={u}>
-                      {u}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {!draft.asNeeded && (
-            <>
               <div>
-                <div className="text-sm font-medium text-[#334155] mb-2">Weekdays *</div>
-                <div
-                  className={cn(
-                    'grid grid-cols-7 gap-1',
-                    step4Touched && scheduleDaysMissing && 'ring-1 ring-red-300 rounded-lg',
-                  )}
-                >
-                  {WEEKDAYS.map((w) => {
-                    const on = draft.daysOfWeek.includes(w)
-                    return (
-                      <label
-                        key={w}
-                        className={cn(
-                          'text-xs px-2 py-1 rounded-lg border cursor-pointer text-center',
-                          on ? 'bg-[#0EA8BC]/10 border-[#0EA8BC] text-[#0F172A]' : 'border-[#E2E8F0] text-[#64748B]',
-                        )}
-                      >
-                        <input
-                          type="checkbox"
-                          className="hidden"
-                          checked={on}
-                          onChange={(e) => {
-                            const set = new Set(draft.daysOfWeek)
-                            e.target.checked ? set.add(w) : set.delete(w)
-                            update('daysOfWeek', Array.from(set) as Weekday[])
-                          }}
-                        />
-                        {weekdayLabelShort[w]}
-                      </label>
-                    )
-                  })}
+                <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Unit *</label>
+                <Select value={draft.strengthUnit} onValueChange={(v) => update('strengthUnit', v as Unit)}>
+                  <SelectTrigger className="w-full h-11 sm:h-10">
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UNIT_OPTIONS.map((u) => (
+                      <SelectItem key={u} value={u}>
+                        {u}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Input
+                label="Notes"
+                placeholder="e.g., take with food"
+                value={draft.notes}
+                onChange={(e) => update('notes', e.target.value)}
+              />
+            </div>
+
+            {showStep1Errors && <ValidationErrors messages={step1Errors} />}
+
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-2 pt-4 sm:pt-2">
+              <Button variant="pillmindWhite" onClick={onClose} className="rounded-xl h-11 sm:h-10 w-full sm:w-auto">
+                Cancel
+              </Button>
+              <Button
+                variant="pillmind"
+                onClick={() => handleNext(1, 2)}
+                className="rounded-xl h-11 sm:h-10 w-full sm:w-auto"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+        {step === 2 && (
+          <div className="space-y-4 sm:space-y-3">
+            <div className="flex items-center justify-between p-4 sm:p-3 border border-[#E2E8F0] rounded-xl bg-white gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-[#0F172A]">As needed (PRN)</div>
+                <div className="text-xs text-[#64748B] mt-0.5">Enable for non-scheduled, on-demand intake</div>
+              </div>
+              <Switch
+                checked={draft.asNeeded}
+                onCheckedChange={(v) => {
+                  const value = !!v
+                  update('asNeeded', value)
+                  if (!value) {
+                    update('maxDailyDose', undefined)
+                  }
+                }}
+              />
+            </div>
+
+            <Input
+              label="Indication (optional)"
+              placeholder="e.g., Diabetes"
+              value={draft.indication}
+              onChange={(e) => update('indication', e.target.value)}
+            />
+            <Input
+              label="Instructions *"
+              placeholder="e.g., 1 tab twice daily"
+              value={draft.instructions}
+              required
+              aria-invalid={step2Touched && instructionsMissing ? 'true' : undefined}
+              className={cn(step2Touched && instructionsMissing && 'border-red-400 focus-visible:ring-red-400')}
+              onChange={(e) => update('instructions', e.target.value)}
+            />
+            {draft.asNeeded && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
+                <Input
+                  label="Max/day *"
+                  type="number"
+                  placeholder="e.g., 6"
+                  value={draft.maxDailyDose ?? ''}
+                  min={1}
+                  step="1"
+                  required
+                  aria-invalid={step2Touched && maxDailyDoseInvalid ? 'true' : undefined}
+                  className={cn(step2Touched && maxDailyDoseInvalid && 'border-red-400 focus-visible:ring-red-400')}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    update('maxDailyDose', value ? Number(value) : undefined)
+                  }}
+                />
+                <div className="p-3 sm:p-3 border border-[#E2E8F0] rounded-xl text-xs text-[#64748B] bg-[#F8FAFC]">
+                  PRN has no fixed times. You can still set default dose amount on next step.
                 </div>
               </div>
+            )}
 
-              <div>
-                <div className="text-sm font-medium text-[#334155] mb-2">Times (24h "HH:mm") *</div>
-                <TimesEditor
-                  value={draft.times}
-                  onChange={(arr) => update('times', arr)}
-                  placeholder="08:00, 20:00"
-                  invalid={step4Touched && scheduleTimesMissing}
-                />
-                <p className="text-xs text-[#64748B] mt-1">Timezone: {timezone}</p>
-              </div>
-            </>
-          )}
+            {showStep2Errors && <ValidationErrors messages={step2Errors} />}
 
-          {showStep4Errors && <ValidationErrors messages={step4Errors} />}
-
-          <div className="flex justify-between pt-2">
-            <Button variant="pillmindWhite" onClick={() => setStep(3)} className="rounded-xl">
-              Back
-            </Button>
-            <Button variant="pillmind" onClick={save} disabled={saving} className="rounded-xl">
-              {saving ? 'Saving...' : 'Save'}
-            </Button>
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2">
+              <Button
+                variant="pillmindWhite"
+                onClick={() => setStep(1)}
+                className="rounded-xl h-11 sm:h-10 w-full sm:w-auto"
+              >
+                Back
+              </Button>
+              <Button
+                variant="pillmind"
+                onClick={() => handleNext(2, 3)}
+                className="rounded-xl h-11 sm:h-10 w-full sm:w-auto"
+              >
+                Next
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <DrawerFooter className="pt-1" />
+        {step === 3 && (
+          <div className="space-y-4 sm:space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
+              <Input
+                label="Current quantity *"
+                type="number"
+                placeholder="e.g., 30"
+                value={draft.inventoryCurrentQty ?? ''}
+                min={0}
+                step="any"
+                required
+                aria-invalid={step3Touched && inventoryQtyInvalid ? 'true' : undefined}
+                className={cn(step3Touched && inventoryQtyInvalid && 'border-red-400 focus-visible:ring-red-400')}
+                onChange={(e) => {
+                  const value = e.target.value
+                  update('inventoryCurrentQty', value ? Number(value) : undefined)
+                }}
+              />
+              <div>
+                <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Inventory unit *</label>
+                <Select
+                  value={draft.inventoryUnit ?? draft.doseUnit ?? 'TAB'}
+                  onValueChange={(v) => update('inventoryUnit', v as Unit)}
+                >
+                  <SelectTrigger
+                    className={cn(
+                      'w-full h-11 sm:h-10',
+                      step3Touched && inventoryUnitMissing && 'border-red-400 focus-visible:ring-red-400',
+                    )}
+                  >
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UNIT_OPTIONS.map((u) => (
+                      <SelectItem key={u} value={u}>
+                        {u}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Input
+              label="Low stock threshold (optional)"
+              type="number"
+              placeholder="e.g., 10"
+              value={draft.inventoryLowThreshold ?? ''}
+              min={0}
+              aria-invalid={step3Touched && inventoryThresholdInvalid ? 'true' : undefined}
+              className={cn(step3Touched && inventoryThresholdInvalid && 'border-red-400 focus-visible:ring-red-400')}
+              onChange={(e) => {
+                const value = e.target.value
+                update('inventoryLowThreshold', value ? Number(value) : undefined)
+              }}
+            />
+
+            <Input
+              label="Last restocked (optional)"
+              type="date"
+              value={restockedDateInputValue}
+              onChange={(e) => {
+                const value = e.target.value
+                update('inventoryLastRestockedAt', value ? new Date(`${value}T00:00:00`).toISOString() : undefined)
+              }}
+            />
+
+            <div className="p-3 sm:p-3 border border-[#E2E8F0] rounded-xl bg-[#F8FAFC] text-xs text-[#64748B]">
+              <p>
+                Track remaining supply to trigger low stock alerts and plan refills in time.
+                {estimatedDosesRemaining != null && effectiveDoseQuantity ? (
+                  <span className="block text-[#0F172A] mt-1">
+                    Approx. {estimatedDosesRemaining} doses left at {effectiveDoseQuantity}{' '}
+                    {draft.doseUnit ?? draft.inventoryUnit ?? 'unit'} per dose.
+                  </span>
+                ) : null}
+              </p>
+            </div>
+
+            {showStep3Errors && <ValidationErrors messages={step3Errors} />}
+
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2">
+              <Button
+                variant="pillmindWhite"
+                onClick={() => setStep(2)}
+                className="rounded-xl h-11 sm:h-10 w-full sm:w-auto"
+              >
+                Back
+              </Button>
+              <Button
+                variant="pillmind"
+                onClick={() => handleNext(3, 4)}
+                className="rounded-xl h-11 sm:h-10 w-full sm:w-auto"
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-4 sm:space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
+              <Input
+                label="Dose quantity *"
+                type="number"
+                value={draft.doseQuantity ?? ''}
+                min={0}
+                step="any"
+                required
+                aria-invalid={step4Touched && doseQuantityInvalid ? 'true' : undefined}
+                className={cn(step4Touched && doseQuantityInvalid && 'border-red-400 focus-visible:ring-red-400')}
+                onChange={(e) => {
+                  const value = e.target.value
+                  update('doseQuantity', value ? Number(value) : undefined)
+                }}
+              />
+              <div>
+                <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Dose unit *</label>
+                <Select value={draft.doseUnit} onValueChange={(v) => update('doseUnit', v as Unit)}>
+                  <SelectTrigger
+                    className={cn(
+                      'w-full h-11 sm:h-10',
+                      step4Touched && doseUnitMissing && 'border-red-400 focus-visible:ring-red-400',
+                    )}
+                  >
+                    <SelectValue placeholder="Unit" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {UNIT_OPTIONS.map((u) => (
+                      <SelectItem key={u} value={u}>
+                        {u}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {!draft.asNeeded && (
+              <>
+                <div>
+                  <div className="text-sm font-medium text-[#334155] mb-2 sm:mb-2">Weekdays *</div>
+                  <div
+                    className={cn(
+                      'grid grid-cols-7 gap-1.5 sm:gap-1',
+                      step4Touched && scheduleDaysMissing && 'ring-1 ring-red-300 rounded-lg p-1',
+                    )}
+                  >
+                    {WEEKDAYS.map((w) => {
+                      const on = draft.daysOfWeek.includes(w)
+                      return (
+                        <label
+                          key={w}
+                          className={cn(
+                            'text-[10px] sm:text-xs px-1.5 sm:px-2 py-2 sm:py-1 rounded-lg border cursor-pointer text-center touch-manipulation min-h-[44px] sm:min-h-0 flex items-center justify-center',
+                            on ? 'bg-[#0EA8BC]/10 border-[#0EA8BC] text-[#0F172A]' : 'border-[#E2E8F0] text-[#64748B]',
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            className="hidden"
+                            checked={on}
+                            onChange={(e) => {
+                              const set = new Set(draft.daysOfWeek)
+                              e.target.checked ? set.add(w) : set.delete(w)
+                              update('daysOfWeek', Array.from(set) as Weekday[])
+                            }}
+                          />
+                          {weekdayLabelShort[w]}
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="text-sm font-medium text-[#334155] mb-2">Times (24h "HH:mm") *</div>
+                  <TimesEditor
+                    value={draft.times}
+                    onChange={(arr) => update('times', arr)}
+                    placeholder="08:00, 20:00"
+                    invalid={step4Touched && scheduleTimesMissing}
+                  />
+                  <p className="text-xs text-[#64748B] mt-1">Timezone: {timezone}</p>
+                </div>
+              </>
+            )}
+
+            {showStep4Errors && <ValidationErrors messages={step4Errors} />}
+
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2">
+              <Button
+                variant="pillmindWhite"
+                onClick={() => setStep(3)}
+                className="rounded-xl h-11 sm:h-10 w-full sm:w-auto"
+              >
+                Back
+              </Button>
+              <Button
+                variant="pillmind"
+                onClick={save}
+                disabled={saving}
+                className="rounded-xl h-11 sm:h-10 w-full sm:w-auto"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <DrawerFooter className="pt-1 flex-shrink-0 px-4 sm:px-6 pb-4 sm:pb-6" />
     </div>
   )
 }
@@ -556,16 +592,16 @@ function StepDot({ active, done, children }: { active?: boolean; done?: boolean;
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[11px] transition-colors',
+        'inline-flex items-center gap-1 px-2 sm:px-2 py-1.5 sm:py-1 rounded-lg border transition-colors touch-manipulation',
         done
-          ? 'bg-green-50 border-green-500 text-green-700'
+          ? 'bg-green-50 border-green-500 text-green-700 text-[10px] sm:text-[11px]'
           : active
-            ? 'bg-[#0EA8BC]/10 border-[#0EA8BC] text-[#0F172A]'
-            : 'border-[#E2E8F0] text-[#64748B]',
+            ? 'bg-[#0EA8BC]/10 border-[#0EA8BC] text-[#0F172A] text-[10px] sm:text-[11px]'
+            : 'border-[#E2E8F0] text-[#64748B] text-[10px] sm:text-[11px]',
       )}
       aria-current={active ? 'step' : undefined}
     >
-      {done && <Check className="w-3 h-3" aria-hidden />}
+      {done && <Check className="w-3 h-3 flex-shrink-0" aria-hidden />}
       {children}
     </div>
   )
@@ -602,7 +638,7 @@ function TimesEditor({
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col sm:flex-row gap-2">
       <Input
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -610,7 +646,7 @@ function TimesEditor({
         className={cn('flex-1', invalid && 'border-red-400 focus-visible:ring-red-400')}
         aria-invalid={invalid ? 'true' : undefined}
       />
-      <Button variant="pillmindOutline" onClick={apply} className="rounded-xl">
+      <Button variant="pillmindOutline" onClick={apply} className="rounded-xl h-11 sm:h-10 w-full sm:w-auto">
         Apply
       </Button>
     </div>
