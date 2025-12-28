@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { weekdayLabelShort } from '@/lib/medication-utils'
 import { Inventory, Medication, Prescription, Schedule } from '@/types/medication'
 import { format, parseISO } from 'date-fns'
@@ -33,15 +33,15 @@ export function MedicationDetails({
       : null
 
   return (
-    <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="w-full sm:max-w-2xl flex flex-col max-h-[90vh] p-0">
+    <Drawer open={open} onOpenChange={onClose} direction="bottom">
+      <DrawerContent className="w-full sm:max-w-2xl flex flex-col max-h-[90vh] p-0">
         {/* Fixed Header */}
-        <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-[#E2E8F0]">
-          <SheetTitle className="flex items-center gap-2 text-left">
+        <DrawerHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-[#E2E8F0]">
+          <DrawerTitle className="flex items-center gap-2 text-left">
             <Pill className="w-5 h-5 text-[#0EA8BC]" />
             {medication.name}
-          </SheetTitle>
-        </SheetHeader>
+          </DrawerTitle>
+        </DrawerHeader>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
@@ -207,7 +207,7 @@ export function MedicationDetails({
             </Button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DrawerContent>
+    </Drawer>
   )
 }

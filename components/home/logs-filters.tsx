@@ -46,7 +46,7 @@ export function LogsFilters({
     <div className="space-y-3">
       {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B] z-[1]" />
         <Input
           placeholder="Search by medication name..."
           value={searchQuery}
@@ -56,7 +56,7 @@ export function LogsFilters({
         {searchQuery && (
           <button
             onClick={() => onSearchChange('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#0F172A]"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-[#0F172A] z-[1]"
           >
             <X className="w-4 h-4" />
           </button>

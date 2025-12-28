@@ -102,7 +102,7 @@ function MedSearch() {
     <div ref={rootRef} className="relative w-full">
       <div className="relative">
         <SearchIcon
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-pm-teal-500"
+          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-pm-teal-500 z-[1]"
           size={16}
         />
         <input
