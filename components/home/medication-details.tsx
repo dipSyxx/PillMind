@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { weekdayLabelShort } from '@/lib/medication-utils'
 import { Inventory, Medication, Prescription, Schedule } from '@/types/medication'
 import { format, parseISO } from 'date-fns'
@@ -33,16 +33,18 @@ export function MedicationDetails({
       : null
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onClose}>
+      <SheetContent side="bottom" className="w-full sm:max-w-2xl flex flex-col h-full p-0">
+        {/* Fixed Header */}
+        <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-[#E2E8F0]">
+          <SheetTitle className="flex items-center gap-2 text-left">
             <Pill className="w-5 h-5 text-[#0EA8BC]" />
             {medication.name}
-          </DialogTitle>
-        </DialogHeader>
+          </SheetTitle>
+        </SheetHeader>
 
-        <div className="space-y-6">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
           {/* Basic Info */}
           <div className="space-y-3">
             <h3 className="font-semibold text-[#0F172A]">Basic Information</h3>
@@ -192,9 +194,11 @@ export function MedicationDetails({
               </div>
             )}
           </div>
+        </div>
 
-          {/* Actions */}
-          <div className="flex gap-2 pt-4 border-t border-[#E2E8F0]">
+        {/* Fixed Footer with Actions */}
+        <div className="flex-shrink-0 px-6 py-4 border-t border-[#E2E8F0] bg-white">
+          <div className="flex gap-2">
             <Button variant="pillmind" className="flex-1" onClick={onEdit}>
               Edit Medication
             </Button>
@@ -203,7 +207,7 @@ export function MedicationDetails({
             </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   )
 }
