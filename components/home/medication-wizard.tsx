@@ -147,10 +147,24 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
 
     if (!scrollContainer) return
 
+    let resizeHandler: (() => void) | null = null
+    let isFirstScroll = true
+
     // Function to scroll input into view
-    const scrollIntoView = () => {
+    const scrollIntoView = (force = false, attempt = 0) => {
       // Use visualViewport API if available for better keyboard handling
       const viewportHeight = window.visualViewport?.height || window.innerHeight
+      const fullHeight = window.innerHeight
+      const keyboardOpenRatio = viewportHeight / fullHeight
+
+      // For first scroll, wait until keyboard is at least partially open
+      // Keyboard typically reduces viewport to 40-60% of full height
+      if (isFirstScroll && attempt < 3 && keyboardOpenRatio > 0.7) {
+        // Keyboard likely not fully open yet, schedule another attempt
+        return false
+      }
+
+      isFirstScroll = false
 
       const inputRect = input.getBoundingClientRect()
       const containerRect = scrollContainer!.getBoundingClientRect()
@@ -161,8 +175,8 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
 
       // Calculate available height (viewport minus safe area)
       // We want the input to be visible above the keyboard with padding
-      const padding = 32 // Padding from keyboard (increased for better visibility)
-      const inputHeight = inputRect.height
+      // Use larger padding for first scroll to account for keyboard animation
+      const padding = force ? 40 : 50
       const inputBottom = inputRect.bottom
 
       // Check if input bottom is too close to viewport bottom
@@ -176,32 +190,58 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
 
         scrollContainer!.scrollTo({
           top: newScrollTop,
-          behavior: 'smooth',
+          behavior: force ? 'auto' : 'smooth',
         })
+        return true
       } else if (inputRect.top < containerRect.top) {
         // If input is above visible area, scroll it into view
         const scrollAmount = inputOffsetTop - padding
         scrollContainer!.scrollTo({
           top: Math.max(0, scrollAmount),
-          behavior: 'smooth',
+          behavior: force ? 'auto' : 'smooth',
         })
+        return true
       }
+      return true
     }
 
-    // Initial scroll after a short delay to let keyboard start opening
-    setTimeout(scrollIntoView, 150)
+    // Multiple attempts to handle keyboard animation
+    // First attempt - very early (for immediate feedback)
+    setTimeout(() => {
+      if (!scrollIntoView(false, 1)) {
+        // If first attempt failed, try again soon
+        setTimeout(() => scrollIntoView(false, 2), 100)
+      }
+    }, 150)
+
+    // Second attempt - after keyboard starts opening
+    setTimeout(() => scrollIntoView(false, 3), 350)
+
+    // Third attempt - after keyboard should be mostly open
+    setTimeout(() => scrollIntoView(true, 4), 550)
+
+    // Fourth attempt - final check after keyboard fully opens
+    setTimeout(() => scrollIntoView(true, 5), 750)
 
     // Also handle visualViewport resize (keyboard animation) for better UX
     if (window.visualViewport) {
-      const handleResize = () => {
+      resizeHandler = () => {
         scrollIntoView()
       }
-      window.visualViewport.addEventListener('resize', handleResize)
+      window.visualViewport.addEventListener('resize', resizeHandler)
 
       // Cleanup after keyboard animation completes
       setTimeout(() => {
-        window.visualViewport?.removeEventListener('resize', handleResize)
-      }, 600)
+        if (resizeHandler) {
+          window.visualViewport?.removeEventListener('resize', resizeHandler)
+          resizeHandler = null
+        }
+        // Final scroll to ensure correct position
+        scrollIntoView(true)
+      }, 800)
+    } else {
+      // Fallback for browsers without visualViewport
+      setTimeout(() => scrollIntoView(true), 600)
     }
   }
 
@@ -335,7 +375,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
 
             {showStep1Errors && <ValidationErrors messages={step1Errors} />}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-2 pt-4 sm:pt-2">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-2 pt-4 sm:pt-2 pb-8 sm:pb-0">
               <Button variant="pillmindWhite" onClick={onClose} className="rounded-xl h-11 sm:h-10 w-full sm:w-auto">
                 Cancel
               </Button>
@@ -411,7 +451,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
 
             {showStep2Errors && <ValidationErrors messages={step2Errors} />}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2 pb-8 sm:pb-0">
               <Button
                 variant="pillmindWhite"
                 onClick={() => setStep(1)}
@@ -514,7 +554,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
 
             {showStep3Errors && <ValidationErrors messages={step3Errors} />}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2 pb-8 sm:pb-0">
               <Button
                 variant="pillmindWhite"
                 onClick={() => setStep(2)}
@@ -626,7 +666,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
 
             {showStep4Errors && <ValidationErrors messages={step4Errors} />}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2 pb-8 sm:pb-0">
               <Button
                 variant="pillmindWhite"
                 onClick={() => setStep(3)}
