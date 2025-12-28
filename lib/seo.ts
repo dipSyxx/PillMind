@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://v0-pill-mind-landing-page.vercel.app'
+
 export const defaultMetadata: Metadata = {
   title: {
     default: 'PillMind - Taking medicine has become easier',
@@ -7,16 +9,34 @@ export const defaultMetadata: Metadata = {
   },
   description:
     'PillMind reminds you about your intake, analyzes your data, and suggests safe combinations. With your permission — and only for you.',
-  keywords: ['medicine', 'reminders', 'health', 'medication', 'app', 'pill reminder', 'healthcare'],
+  keywords: [
+    'medicine',
+    'reminders',
+    'health',
+    'medication',
+    'app',
+    'pill reminder',
+    'healthcare',
+    'medication tracker',
+    'drug interaction checker',
+    'adherence tracking',
+    'health app',
+    'medication management',
+    'pill organizer',
+    'medicine reminder app',
+  ],
   authors: [{ name: 'PillMind Team' }],
   creator: 'PillMind',
   publisher: 'PillMind',
+  applicationName: 'PillMind',
+  category: 'healthcare',
+  classification: 'Health & Fitness',
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://pillmind.app'),
+  metadataBase: new URL(baseUrl),
   alternates: {
     canonical: '/',
     languages: {
@@ -27,7 +47,8 @@ export const defaultMetadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'uk_UA',
-    url: 'https://pillmind.app',
+    alternateLocale: ['en_US'],
+    url: baseUrl,
     title: 'PillMind - Taking medicine has become easier',
     description: 'PillMind reminds you about your intake, analyzes your data, and suggests safe combinations.',
     siteName: 'PillMind',
@@ -37,6 +58,7 @@ export const defaultMetadata: Metadata = {
         width: 1200,
         height: 630,
         alt: 'PillMind - Medication Reminder App',
+        type: 'image/png',
       },
     ],
   },
@@ -45,6 +67,8 @@ export const defaultMetadata: Metadata = {
     title: 'PillMind - Taking medicine has become easier',
     description: 'PillMind reminds you about your intake, analyzes your data, and suggests safe combinations.',
     images: ['/images/pillmind-logo.png'],
+    creator: '@pillmind',
+    site: '@pillmind',
   },
   robots: {
     index: true,
@@ -58,8 +82,28 @@ export const defaultMetadata: Metadata = {
     },
   },
   verification: {
-    google: 'your-google-verification-code',
-    yandex: 'your-yandex-verification-code',
+    google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION || 'your-google-verification-code',
+    yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || 'your-yandex-verification-code',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'PillMind',
+  },
+  manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon/icon1.png', sizes: 'any' },
+      { url: '/favicon/icon0.svg', type: 'image/svg+xml' },
+      { url: '/favicon/favicon.ico', sizes: '32x32' },
+    ],
+    apple: [
+      { url: '/favicon/apple-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/favicon/favicon.ico',
+  },
+  other: {
+    'apple-mobile-web-app-title': 'PillMind',
   },
 }
 

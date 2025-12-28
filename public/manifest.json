@@ -1,0 +1,37 @@
+{
+  "name": "PillMind - Medication Reminder App",
+  "short_name": "PillMind",
+  "description": "PillMind reminds you about your intake, analyzes your data, and suggests safe combinations. With your permission — and only for you.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F8FAFC",
+  "theme_color": "#0EA8BC",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "medical", "lifestyle"],
+  "lang": "uk",
+  "dir": "ltr",
+  "scope": "/",
+  "shortcuts": [
+    {
+      "name": "Add Medication",
+      "short_name": "Add Med",
+      "description": "Quickly add a new medication",
+      "url": "/home?action=add",
+      "icons": [{ "src": "/favicon/web-app-manifest-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}

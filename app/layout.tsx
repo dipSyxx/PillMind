@@ -1,13 +1,14 @@
-import type React from 'react'
-import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
-import './globals.css'
-import { defaultMetadata } from '@/lib/seo'
-import { AuthProvider } from '@/components/providers/session-provider'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import EnsureSettings from '@/components/providers/ensure-settings'
+import { AuthProvider } from '@/components/providers/session-provider'
+import { OrganizationStructuredData, WebSiteStructuredData } from '@/components/seo/structured-data'
 import { ThemeProvider } from '@/components/theme-provider'
+import { authOptions } from '@/lib/auth'
+import { defaultMetadata } from '@/lib/seo'
+import type { Metadata } from 'next'
+import { getServerSession } from 'next-auth'
+import { Inter, JetBrains_Mono } from 'next/font/google'
+import type React from 'react'
+import './globals.css'
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -28,6 +29,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}>
       <body className="overflow-x-hidden font-sans">
+        <OrganizationStructuredData />
+        <WebSiteStructuredData />
         <AuthProvider session={session}>
           <EnsureSettings />
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
