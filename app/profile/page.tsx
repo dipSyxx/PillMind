@@ -1,46 +1,45 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { useSession, signOut, signIn } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { format, parseISO } from 'date-fns'
-import {
-  User,
-  Mail,
-  Calendar,
-  Shield,
-  Key,
-  Trash2,
-  ExternalLink,
-  Check,
-  AlertTriangle,
-  Eye,
-  EyeOff,
-  Save,
-  LogOut,
-  Settings,
-  Lock,
-  AlertCircle,
-  ArrowLeft,
-  Pill,
-  Info,
-  SettingsIcon,
-  ArrowRight,
-} from 'lucide-react'
+import { Container } from '@/components/shared/container'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { PasswordStrength } from '@/components/ui/password-strength'
-import { Container } from '@/components/shared/container'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Checkbox } from '@/components/ui/checkbox'
+import { cn } from '@/lib/utils'
 import {
   changePasswordSchema,
+  confirmNewPasswordSchema,
   currentPasswordSchema,
   newPasswordSchema,
-  confirmNewPasswordSchema,
 } from '@/lib/validation'
-import { cn } from '@/lib/utils'
+import { format, parseISO } from 'date-fns'
+import { motion } from 'framer-motion'
+import {
+  AlertCircle,
+  AlertTriangle,
+  ArrowLeft,
+  ArrowRight,
+  Calendar,
+  Check,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Info,
+  Key,
+  Lock,
+  LogOut,
+  Mail,
+  Pill,
+  Save,
+  SettingsIcon,
+  Shield,
+  Trash2,
+  User,
+} from 'lucide-react'
+import { signIn, signOut, useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
 
 type TimeFormat = 'H12' | 'H24'
 type Channel = 'PUSH' | 'EMAIL' | 'SMS'
@@ -550,14 +549,14 @@ export default function ProfilePage() {
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
-              <nav className="flex">
+            <div className="border-b border-[#E2E8F0] bg-[#F8FAFC] overflow-x-auto">
+              <nav className="flex min-w-max sm:min-w-0">
                 {tabs.map((tab) => (
                   <motion.button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={cn(
-                      'flex items-center gap-2 px-6 py-4 text-sm font-medium transition-all duration-200 relative',
+                      'flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium transition-all duration-200 relative whitespace-nowrap flex-shrink-0',
                       activeTab === tab.id
                         ? 'text-[#0EA8BC] bg-white border-b-2 border-[#0EA8BC]'
                         : 'text-[#64748B] hover:text-[#0F172A] hover:bg-white/50',
@@ -565,8 +564,8 @@ export default function ProfilePage() {
                     whileHover={{ y: -1 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <tab.icon className="w-4 h-4" />
-                    {tab.label}
+                    <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                    <span className="hidden min-[375px]:inline">{tab.label}</span>
                     {activeTab === tab.id && (
                       <motion.div
                         layoutId="activeTab"
