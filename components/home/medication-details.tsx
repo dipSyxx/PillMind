@@ -34,7 +34,7 @@ export function MedicationDetails({
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="w-full sm:max-w-2xl flex flex-col h-full p-0">
+      <SheetContent side="bottom" className="w-full sm:max-w-2xl flex flex-col max-h-[90vh] p-0">
         {/* Fixed Header */}
         <SheetHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-[#E2E8F0]">
           <SheetTitle className="flex items-center gap-2 text-left">
