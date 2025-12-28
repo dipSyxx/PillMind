@@ -466,7 +466,7 @@ export default function HomePage() {
 
       {/* Add Medication Wizard - shown only on home tab */}
       {activeTab === 'home' && (
-        <Drawer open={isAddOpen} onOpenChange={setIsAddOpen} direction="bottom">
+        <Drawer open={isAddOpen} onOpenChange={setIsAddOpen} direction="bottom" repositionInputs={false}>
           <DrawerTrigger asChild>
             <button className="fixed bottom-[90px] left-1/2 -translate-x-1/2 z-40 bg-[#0EA8BC] text-white rounded-full w-14 h-14 shadow-[0_10px_30px_rgba(14,168,188,0.4)] active:scale-95 transition">
               <Plus className="w-6 h-6 mx-auto" />

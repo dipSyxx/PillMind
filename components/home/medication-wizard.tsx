@@ -40,6 +40,8 @@ type WizardStep = 1 | 2 | 3 | 4
 export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, timeFormat }: MedicationWizardProps) {
   const [step, setStep] = useState<WizardStep>(1)
   const [saving, setSaving] = useState(false)
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
+  const [viewportHeight, setViewportHeight] = useState<number | null>(null)
   const [draft, setDraft] = useState<DraftMedication>({
     name: initial?.name ?? '',
     brandName: initial?.brandName ?? '',
@@ -140,6 +142,73 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     }
   }
 
+  // Track viewport height for keyboard detection
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return
+
+    function updateViewportHeight() {
+      setViewportHeight(window.visualViewport?.height || null)
+    }
+
+    updateViewportHeight()
+    window.visualViewport.addEventListener('resize', updateViewportHeight)
+    return () => window.visualViewport?.removeEventListener('resize', updateViewportHeight)
+  }, [])
+
+  // Handle input focus to scroll into view on mobile when keyboard opens
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (!scrollContainerRef.current) return
+
+    const input = e.target
+    const scrollContainer = scrollContainerRef.current
+
+    // Use visualViewport if available, otherwise fallback to window.innerHeight
+    const viewportHeight = window.visualViewport?.height || window.innerHeight
+    const keyboardHeight = window.innerHeight - viewportHeight
+
+    // Only handle on mobile devices (when keyboard is likely to appear)
+    if (keyboardHeight < 50) return
+
+    // Wait for keyboard animation to complete
+    const scrollIntoView = () => {
+      const inputRect = input.getBoundingClientRect()
+      const containerRect = scrollContainer.getBoundingClientRect()
+      const scrollTop = scrollContainer.scrollTop
+
+      // Calculate input position relative to container
+      const inputOffsetTop = inputRect.top - containerRect.top + scrollTop
+
+      // Calculate available height (viewport minus keyboard)
+      const availableHeight = viewportHeight
+      const padding = 20 // Padding from bottom
+      const inputBottom = inputRect.bottom
+
+      // Check if input is too close to viewport bottom (keyboard area)
+      if (inputBottom > availableHeight - padding) {
+        // Calculate how much we need to scroll
+        const scrollAmount = inputBottom - availableHeight + padding
+        const newScrollTop = Math.max(0, scrollTop + scrollAmount)
+
+        scrollContainer.scrollTo({
+          top: newScrollTop,
+          behavior: 'smooth',
+        })
+      } else if (inputRect.top < containerRect.top) {
+        // If input is above visible area, scroll it into view
+        const scrollAmount = inputOffsetTop - padding
+        scrollContainer.scrollTo({
+          top: Math.max(0, scrollAmount),
+          behavior: 'smooth',
+        })
+      }
+    }
+
+    // Multiple attempts to handle keyboard animation
+    setTimeout(() => scrollIntoView(), 100)
+    setTimeout(() => scrollIntoView(), 300)
+    setTimeout(() => scrollIntoView(), 500)
+  }
+
   return (
     <div className="flex flex-col h-full max-h-[80vh]">
       <div className="flex-shrink-0">
@@ -175,7 +244,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
         {step === 1 && (
           <div className="space-y-4 sm:space-y-3">
             <Input
@@ -186,11 +255,13 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               aria-invalid={step1Touched && medicationNameMissing ? 'true' : undefined}
               className={cn(step1Touched && medicationNameMissing && 'border-red-400 focus-visible:ring-red-400')}
               onChange={(e) => update('name', e.target.value)}
+              onFocus={handleInputFocus}
             />
             <Input
               label="Brand name (optional)"
               value={draft.brandName}
               onChange={(e) => update('brandName', e.target.value)}
+              onFocus={handleInputFocus}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
               <div>
@@ -240,6 +311,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   const value = e.target.value
                   update('strengthValue', value ? Number(value) : undefined)
                 }}
+                onFocus={handleInputFocus}
               />
               <div>
                 <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Unit *</label>
@@ -261,6 +333,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 placeholder="e.g., take with food"
                 value={draft.notes}
                 onChange={(e) => update('notes', e.target.value)}
+                onFocus={handleInputFocus}
               />
             </div>
 
@@ -304,6 +377,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               placeholder="e.g., Diabetes"
               value={draft.indication}
               onChange={(e) => update('indication', e.target.value)}
+              onFocus={handleInputFocus}
             />
             <Input
               label="Instructions *"
@@ -313,6 +387,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               aria-invalid={step2Touched && instructionsMissing ? 'true' : undefined}
               className={cn(step2Touched && instructionsMissing && 'border-red-400 focus-visible:ring-red-400')}
               onChange={(e) => update('instructions', e.target.value)}
+              onFocus={handleInputFocus}
             />
             {draft.asNeeded && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
@@ -330,6 +405,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                     const value = e.target.value
                     update('maxDailyDose', value ? Number(value) : undefined)
                   }}
+                  onFocus={handleInputFocus}
                 />
                 <div className="p-3 sm:p-3 border border-[#E2E8F0] rounded-xl text-xs text-[#64748B] bg-[#F8FAFC]">
                   PRN has no fixed times. You can still set default dose amount on next step.
@@ -375,6 +451,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   const value = e.target.value
                   update('inventoryCurrentQty', value ? Number(value) : undefined)
                 }}
+                onFocus={handleInputFocus}
               />
               <div>
                 <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Inventory unit *</label>
@@ -413,6 +490,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 const value = e.target.value
                 update('inventoryLowThreshold', value ? Number(value) : undefined)
               }}
+              onFocus={handleInputFocus}
             />
 
             <Input
@@ -423,6 +501,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 const value = e.target.value
                 update('inventoryLastRestockedAt', value ? new Date(`${value}T00:00:00`).toISOString() : undefined)
               }}
+              onFocus={handleInputFocus}
             />
 
             <div className="p-3 sm:p-3 border border-[#E2E8F0] rounded-xl bg-[#F8FAFC] text-xs text-[#64748B]">
@@ -474,6 +553,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   const value = e.target.value
                   update('doseQuantity', value ? Number(value) : undefined)
                 }}
+                onFocus={handleInputFocus}
               />
               <div>
                 <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Dose unit *</label>
@@ -541,6 +621,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                     onChange={(arr) => update('times', arr)}
                     placeholder="08:00, 20:00"
                     invalid={step4Touched && scheduleTimesMissing}
+                    onInputFocus={handleInputFocus}
                   />
                   <p className="text-xs text-[#64748B] mt-1">Timezone: {timezone}</p>
                 </div>
@@ -612,11 +693,13 @@ function TimesEditor({
   onChange,
   placeholder,
   invalid = false,
+  onInputFocus,
 }: {
   value: string[]
   onChange: (v: string[]) => void
   placeholder?: string
   invalid?: boolean
+  onInputFocus?: (e: React.FocusEvent<HTMLInputElement>) => void
 }) {
   const [draft, setDraft] = useState(value.join(', '))
   useEffect(() => setDraft(value.join(', ')), [value])
@@ -645,6 +728,7 @@ function TimesEditor({
         placeholder={placeholder}
         className={cn('flex-1', invalid && 'border-red-400 focus-visible:ring-red-400')}
         aria-invalid={invalid ? 'true' : undefined}
+        onFocus={onInputFocus}
       />
       <Button variant="pillmindOutline" onClick={apply} className="rounded-xl h-11 sm:h-10 w-full sm:w-auto">
         Apply
