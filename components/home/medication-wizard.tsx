@@ -140,113 +140,8 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     }
   }
 
-  // Handle input focus to scroll into view on mobile, especially for inputs at the bottom
-  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const input = e.target
-    const scrollContainer = input.closest('.overflow-y-auto') as HTMLElement | null
-
-    if (!scrollContainer) return
-
-    let resizeHandler: (() => void) | null = null
-    let isFirstScroll = true
-
-    // Function to scroll input into view
-    const scrollIntoView = (force = false, attempt = 0) => {
-      // Use visualViewport API if available for better keyboard handling
-      const viewportHeight = window.visualViewport?.height || window.innerHeight
-      const fullHeight = window.innerHeight
-      const keyboardOpenRatio = viewportHeight / fullHeight
-
-      // For first scroll, wait until keyboard is at least partially open
-      // Keyboard typically reduces viewport to 40-60% of full height
-      if (isFirstScroll && attempt < 3 && keyboardOpenRatio > 0.7) {
-        // Keyboard likely not fully open yet, schedule another attempt
-        return false
-      }
-
-      isFirstScroll = false
-
-      const inputRect = input.getBoundingClientRect()
-      const containerRect = scrollContainer!.getBoundingClientRect()
-      const scrollTop = scrollContainer!.scrollTop
-
-      // Calculate input position relative to container
-      const inputOffsetTop = inputRect.top - containerRect.top + scrollTop
-
-      // Calculate available height (viewport minus safe area)
-      // We want the input to be visible above the keyboard with padding
-      // Use larger padding for first scroll to account for keyboard animation
-      const padding = force ? 40 : 50
-      const inputBottom = inputRect.bottom
-
-      // Check if input bottom is too close to viewport bottom
-      if (inputBottom > viewportHeight - padding) {
-        // Calculate how much we need to scroll
-        // We want the input to be at least `padding` pixels above the viewport bottom
-        const scrollAmount = inputBottom - viewportHeight + padding
-
-        // Calculate new scroll position
-        const newScrollTop = Math.max(0, scrollTop + scrollAmount)
-
-        scrollContainer!.scrollTo({
-          top: newScrollTop,
-          behavior: force ? 'auto' : 'smooth',
-        })
-        return true
-      } else if (inputRect.top < containerRect.top) {
-        // If input is above visible area, scroll it into view
-        const scrollAmount = inputOffsetTop - padding
-        scrollContainer!.scrollTo({
-          top: Math.max(0, scrollAmount),
-          behavior: force ? 'auto' : 'smooth',
-        })
-        return true
-      }
-      return true
-    }
-
-    // Multiple attempts to handle keyboard animation
-    // First attempt - very early (for immediate feedback)
-    setTimeout(() => {
-      if (!scrollIntoView(false, 1)) {
-        // If first attempt failed, try again soon
-        setTimeout(() => scrollIntoView(false, 2), 100)
-      }
-    }, 150)
-
-    // Second attempt - after keyboard starts opening
-    setTimeout(() => scrollIntoView(false, 3), 350)
-
-    // Third attempt - after keyboard should be mostly open
-    setTimeout(() => scrollIntoView(true, 4), 550)
-
-    // Fourth attempt - final check after keyboard fully opens
-    setTimeout(() => scrollIntoView(true, 5), 750)
-
-    // Also handle visualViewport resize (keyboard animation) for better UX
-    if (window.visualViewport) {
-      resizeHandler = () => {
-        scrollIntoView()
-      }
-      window.visualViewport.addEventListener('resize', resizeHandler)
-
-      // Cleanup after keyboard animation completes
-      setTimeout(() => {
-        if (resizeHandler) {
-          window.visualViewport?.removeEventListener('resize', resizeHandler)
-          resizeHandler = null
-        }
-        // Final scroll to ensure correct position
-        scrollIntoView(true)
-      }, 800)
-    } else {
-      // Fallback for browsers without visualViewport
-      setTimeout(() => scrollIntoView(true), 600)
-    }
-  }
-
   return (
-    <div className="flex flex-col h-full max-h-[80dvh] sm:max-h-[80vh]">
+    <div className="flex flex-col h-full max-h-[80vh]">
       <div className="flex-shrink-0">
         <DrawerHeader>
           <DrawerTitle className="text-lg sm:text-xl">
@@ -280,7 +175,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pb-6 space-y-4 sm:space-y-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
         {step === 1 && (
           <div className="space-y-4 sm:space-y-3">
             <Input
@@ -291,13 +186,11 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               aria-invalid={step1Touched && medicationNameMissing ? 'true' : undefined}
               className={cn(step1Touched && medicationNameMissing && 'border-red-400 focus-visible:ring-red-400')}
               onChange={(e) => update('name', e.target.value)}
-              onFocus={handleInputFocus}
             />
             <Input
               label="Brand name (optional)"
               value={draft.brandName}
               onChange={(e) => update('brandName', e.target.value)}
-              onFocus={handleInputFocus}
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
               <div>
@@ -347,7 +240,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   const value = e.target.value
                   update('strengthValue', value ? Number(value) : undefined)
                 }}
-                onFocus={handleInputFocus}
               />
               <div>
                 <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Unit *</label>
@@ -369,13 +261,12 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 placeholder="e.g., take with food"
                 value={draft.notes}
                 onChange={(e) => update('notes', e.target.value)}
-                onFocus={handleInputFocus}
               />
             </div>
 
             {showStep1Errors && <ValidationErrors messages={step1Errors} />}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-2 pt-4 sm:pt-2 pb-8 sm:pb-0">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-2 pt-4 sm:pt-2">
               <Button variant="pillmindWhite" onClick={onClose} className="rounded-xl h-11 sm:h-10 w-full sm:w-auto">
                 Cancel
               </Button>
@@ -413,7 +304,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               placeholder="e.g., Diabetes"
               value={draft.indication}
               onChange={(e) => update('indication', e.target.value)}
-              onFocus={handleInputFocus}
             />
             <Input
               label="Instructions *"
@@ -423,7 +313,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               aria-invalid={step2Touched && instructionsMissing ? 'true' : undefined}
               className={cn(step2Touched && instructionsMissing && 'border-red-400 focus-visible:ring-red-400')}
               onChange={(e) => update('instructions', e.target.value)}
-              onFocus={handleInputFocus}
             />
             {draft.asNeeded && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
@@ -441,7 +330,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                     const value = e.target.value
                     update('maxDailyDose', value ? Number(value) : undefined)
                   }}
-                  onFocus={handleInputFocus}
                 />
                 <div className="p-3 sm:p-3 border border-[#E2E8F0] rounded-xl text-xs text-[#64748B] bg-[#F8FAFC]">
                   PRN has no fixed times. You can still set default dose amount on next step.
@@ -451,7 +339,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
 
             {showStep2Errors && <ValidationErrors messages={step2Errors} />}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2 pb-8 sm:pb-0">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2">
               <Button
                 variant="pillmindWhite"
                 onClick={() => setStep(1)}
@@ -487,7 +375,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   const value = e.target.value
                   update('inventoryCurrentQty', value ? Number(value) : undefined)
                 }}
-                onFocus={handleInputFocus}
               />
               <div>
                 <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Inventory unit *</label>
@@ -526,7 +413,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 const value = e.target.value
                 update('inventoryLowThreshold', value ? Number(value) : undefined)
               }}
-              onFocus={handleInputFocus}
             />
 
             <Input
@@ -537,7 +423,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 const value = e.target.value
                 update('inventoryLastRestockedAt', value ? new Date(`${value}T00:00:00`).toISOString() : undefined)
               }}
-              onFocus={handleInputFocus}
             />
 
             <div className="p-3 sm:p-3 border border-[#E2E8F0] rounded-xl bg-[#F8FAFC] text-xs text-[#64748B]">
@@ -554,7 +439,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
 
             {showStep3Errors && <ValidationErrors messages={step3Errors} />}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2 pb-8 sm:pb-0">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2">
               <Button
                 variant="pillmindWhite"
                 onClick={() => setStep(2)}
@@ -589,7 +474,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                   const value = e.target.value
                   update('doseQuantity', value ? Number(value) : undefined)
                 }}
-                onFocus={handleInputFocus}
               />
               <div>
                 <label className="block text-sm font-medium text-[#334155] mb-1.5 sm:mb-1">Dose unit *</label>
@@ -657,7 +541,6 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                     onChange={(arr) => update('times', arr)}
                     placeholder="08:00, 20:00"
                     invalid={step4Touched && scheduleTimesMissing}
-                    onInputFocus={handleInputFocus}
                   />
                   <p className="text-xs text-[#64748B] mt-1">Timezone: {timezone}</p>
                 </div>
@@ -666,7 +549,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
 
             {showStep4Errors && <ValidationErrors messages={step4Errors} />}
 
-            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2 pb-8 sm:pb-0">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-2 sm:gap-2 pt-4 sm:pt-2">
               <Button
                 variant="pillmindWhite"
                 onClick={() => setStep(3)}
@@ -729,13 +612,11 @@ function TimesEditor({
   onChange,
   placeholder,
   invalid = false,
-  onInputFocus,
 }: {
   value: string[]
   onChange: (v: string[]) => void
   placeholder?: string
   invalid?: boolean
-  onInputFocus?: (e: React.FocusEvent<HTMLInputElement>) => void
 }) {
   const [draft, setDraft] = useState(value.join(', '))
   useEffect(() => setDraft(value.join(', ')), [value])
@@ -764,7 +645,6 @@ function TimesEditor({
         placeholder={placeholder}
         className={cn('flex-1', invalid && 'border-red-400 focus-visible:ring-red-400')}
         aria-invalid={invalid ? 'true' : undefined}
-        onFocus={onInputFocus}
       />
       <Button variant="pillmindOutline" onClick={apply} className="rounded-xl h-11 sm:h-10 w-full sm:w-auto">
         Apply
