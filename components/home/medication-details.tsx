@@ -1,19 +1,18 @@
 'use client'
 
-import React from 'react'
-import { X, Calendar, Clock, Pill, AlertCircle } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Medication, Inventory, Prescription, Schedule } from '@/types/medication'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { weekdayLabelShort } from '@/lib/medication-utils'
+import { Inventory, Medication, Prescription, Schedule } from '@/types/medication'
 import { format, parseISO } from 'date-fns'
-import { toLocalHM } from '@/lib/medication-utils'
-import { WEEKDAYS, weekdayLabelShort } from '@/lib/medication-utils'
+import { AlertCircle, Calendar, Clock, Pill } from 'lucide-react'
 
 interface MedicationDetailsProps {
   medication: Medication & { inventory?: Inventory | null }
   prescriptions: (Prescription & { schedules?: Schedule[]; medication?: Medication | null })[]
   timeFormat: 'H12' | 'H24'
+  open?: boolean
   onClose: () => void
   onEdit: () => void
 }
@@ -22,12 +21,11 @@ export function MedicationDetails({
   medication,
   prescriptions,
   timeFormat,
+  open = true,
   onClose,
   onEdit,
 }: MedicationDetailsProps) {
-  const activePrescriptions = prescriptions.filter(
-    (rx) => !rx.endDate || new Date(rx.endDate) > new Date(),
-  )
+  const activePrescriptions = prescriptions.filter((rx) => !rx.endDate || new Date(rx.endDate) > new Date())
 
   const strengthDisplay =
     medication.strengthValue && medication.strengthUnit
@@ -35,7 +33,7 @@ export function MedicationDetails({
       : null
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -113,9 +111,7 @@ export function MedicationDetails({
 
           {/* Prescriptions */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-[#0F172A]">
-              Prescriptions ({activePrescriptions.length} active)
-            </h3>
+            <h3 className="font-semibold text-[#0F172A]">Prescriptions ({activePrescriptions.length} active)</h3>
 
             {activePrescriptions.length === 0 ? (
               <div className="bg-[#F8FAFC] rounded-xl p-4 text-center text-sm text-[#64748B]">
@@ -135,9 +131,7 @@ export function MedicationDetails({
                             </Badge>
                           )}
                         </div>
-                        {rx.instructions && (
-                          <p className="text-sm text-[#0F172A] mb-2">{rx.instructions}</p>
-                        )}
+                        {rx.instructions && <p className="text-sm text-[#0F172A] mb-2">{rx.instructions}</p>}
                         <div className="text-xs text-[#64748B] space-y-1">
                           {rx.startDate && (
                             <div className="flex items-center gap-1">
@@ -184,9 +178,7 @@ export function MedicationDetails({
                               <div className="flex flex-wrap gap-1">
                                 {schedule.times.map((time) => (
                                   <Badge key={time} variant="secondary" className="text-xs">
-                                    {timeFormat === 'H12'
-                                      ? format(parseISO(`2000-01-01T${time}:00`), 'h:mm a')
-                                      : time}
+                                    {timeFormat === 'H12' ? format(parseISO(`2000-01-01T${time}:00`), 'h:mm a') : time}
                                   </Badge>
                                 ))}
                               </div>
@@ -215,4 +207,3 @@ export function MedicationDetails({
     </Dialog>
   )
 }
-

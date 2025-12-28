@@ -9,7 +9,7 @@ import { WEEKDAYS, weekdayLabelShort } from '@/lib/medication-utils'
 import { cn } from '@/lib/utils'
 import { DraftMedication, MedForm, RouteKind, TimeFormat, Unit, Weekday } from '@/types/medication'
 import { format } from 'date-fns'
-import { Check } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
 
 const FORM_OPTIONS: MedForm[] = ['TABLET', 'CAPSULE', 'LIQUID', 'INJECTION', 'INHALER', 'TOPICAL', 'DROPS', 'OTHER']
@@ -136,7 +136,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     }
     setSaving(true)
     try {
-      onSaved(draft)
+      await onSaved(draft)
     } finally {
       setSaving(false)
     }
@@ -644,7 +644,14 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 disabled={saving}
                 className="rounded-xl h-11 sm:h-10 w-full sm:w-auto"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save'
+                )}
               </Button>
             </div>
           </div>

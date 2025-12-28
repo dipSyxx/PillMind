@@ -1,12 +1,6 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
-import { Plus, Pill } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer'
-import { MedicationList } from './medication-list'
-import { MedicationDetails } from './medication-details'
-import { MedicationWizard } from './medication-wizard'
+import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,9 +11,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Medication, Inventory, Prescription, UserSettings, DraftMedication } from '@/types/medication'
-import { useUserData, useUserActions } from '@/hooks/useUserStore'
-import { LoadingSpinner } from '@/components/shared/loading-spinner'
+import { Drawer, DrawerContent } from '@/components/ui/drawer'
+import { useUserActions, useUserData } from '@/hooks/useUserStore'
+import { DraftMedication, Inventory, Medication, Prescription } from '@/types/medication'
+import { useMemo, useState } from 'react'
+import { MedicationDetails } from './medication-details'
+import { MedicationList } from './medication-list'
+import { MedicationWizard } from './medication-wizard'
 
 interface MedsPageProps {
   timezone: string
@@ -166,6 +164,7 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
           medication={medicationForDetails}
           prescriptions={prescriptionsByMedId.get(medicationForDetails.id) || []}
           timeFormat={timeFormat}
+          open={isDetailsOpen}
           onClose={() => {
             setIsDetailsOpen(false)
             setSelectedMedication(null)
@@ -217,13 +216,9 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
               cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="gap-2">
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              disabled={isDeleting}
-              className="bg-red-600 hover:bg-red-700"
-            >
+            <AlertDialogAction onClick={confirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
               {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -232,4 +227,3 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
     </div>
   )
 }
-
