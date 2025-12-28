@@ -140,25 +140,69 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     }
   }
 
-  // Handle input focus to scroll into view on mobile
+  // Handle input focus to scroll into view on mobile, especially for inputs at the bottom
   const handleInputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    // Small delay to ensure keyboard is open
-    setTimeout(() => {
-      const input = e.target
-      const scrollContainer = input.closest('.overflow-y-auto')
-      if (scrollContainer) {
-        const inputRect = input.getBoundingClientRect()
-        const containerRect = scrollContainer.getBoundingClientRect()
-        const scrollTop = scrollContainer.scrollTop
-        const inputOffsetTop = inputRect.top - containerRect.top + scrollTop
+    const input = e.target
+    const scrollContainer = input.closest('.overflow-y-auto') as HTMLElement | null
 
-        // Scroll to center the input in the visible area
-        scrollContainer.scrollTo({
-          top: inputOffsetTop - containerRect.height / 2 + inputRect.height / 2,
+    if (!scrollContainer) return
+
+    // Function to scroll input into view
+    const scrollIntoView = () => {
+      // Use visualViewport API if available for better keyboard handling
+      const viewportHeight = window.visualViewport?.height || window.innerHeight
+
+      const inputRect = input.getBoundingClientRect()
+      const containerRect = scrollContainer!.getBoundingClientRect()
+      const scrollTop = scrollContainer!.scrollTop
+
+      // Calculate input position relative to container
+      const inputOffsetTop = inputRect.top - containerRect.top + scrollTop
+
+      // Calculate available height (viewport minus safe area)
+      // We want the input to be visible above the keyboard with padding
+      const padding = 32 // Padding from keyboard (increased for better visibility)
+      const inputHeight = inputRect.height
+      const inputBottom = inputRect.bottom
+
+      // Check if input bottom is too close to viewport bottom
+      if (inputBottom > viewportHeight - padding) {
+        // Calculate how much we need to scroll
+        // We want the input to be at least `padding` pixels above the viewport bottom
+        const scrollAmount = inputBottom - viewportHeight + padding
+
+        // Calculate new scroll position
+        const newScrollTop = Math.max(0, scrollTop + scrollAmount)
+
+        scrollContainer!.scrollTo({
+          top: newScrollTop,
+          behavior: 'smooth',
+        })
+      } else if (inputRect.top < containerRect.top) {
+        // If input is above visible area, scroll it into view
+        const scrollAmount = inputOffsetTop - padding
+        scrollContainer!.scrollTo({
+          top: Math.max(0, scrollAmount),
           behavior: 'smooth',
         })
       }
-    }, 300)
+    }
+
+    // Initial scroll after a short delay to let keyboard start opening
+    setTimeout(scrollIntoView, 150)
+
+    // Also handle visualViewport resize (keyboard animation) for better UX
+    if (window.visualViewport) {
+      const handleResize = () => {
+        scrollIntoView()
+      }
+      window.visualViewport.addEventListener('resize', handleResize)
+
+      // Cleanup after keyboard animation completes
+      setTimeout(() => {
+        window.visualViewport?.removeEventListener('resize', handleResize)
+      }, 600)
+    }
   }
 
   return (
@@ -196,7 +240,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4 sm:pb-6 space-y-4 sm:space-y-6">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:pb-6 space-y-4 sm:space-y-6">
         {step === 1 && (
           <div className="space-y-4 sm:space-y-3">
             <Input
