@@ -342,7 +342,11 @@ export default function HomePage() {
                   className="rounded-xl"
                   onClick={() => {
                     // Return to current week and today
-                    setSelectedDate(new Date())
+                    const now = new Date()
+                    setSelectedDate(now)
+                    // Load dose logs for current week
+                    const currentWeekStart = startOfWeek(now)
+                    loadWeekDoseLogs(currentWeekStart)
                   }}
                 >
                   <CalendarDays className="w-4 h-4 mr-2" />
