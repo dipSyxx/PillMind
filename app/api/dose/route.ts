@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/prisma/prisma-client'
+import { shouldBeMarkedAsMissed } from '@/lib/dose-utils'
 import { getUserIdFromSession } from '@/lib/session'
+import prisma from '@/prisma/prisma-client'
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 const doseLogSchema = z.object({
@@ -27,15 +28,13 @@ export async function GET(request: NextRequest) {
     const prescriptionId = searchParams.get('prescriptionId')
     const status = searchParams.get('status')
 
-
     // Get user's prescriptions to filter dose logs
     const userPrescriptions = await prisma.prescription.findMany({
       where: { userId },
       select: { id: true },
     })
 
-
-    const prescriptionIds = userPrescriptions.map(p => p.id)
+    const prescriptionIds = userPrescriptions.map((p) => p.id)
 
     const whereClause: any = {
       prescriptionId: { in: prescriptionIds },
@@ -73,6 +72,44 @@ export async function GET(request: NextRequest) {
       },
       orderBy: { scheduledFor: 'desc' },
     })
+
+    // Get user's timezone to check for missed doses
+    const userSettings = await prisma.userSettings.findUnique({
+      where: { userId },
+    })
+    const userTimezone = userSettings?.timezone || 'UTC'
+
+    // Mark missed doses before returning
+    const now = new Date()
+    const missedDoseIds: string[] = []
+
+    for (const doseLog of doseLogs) {
+      // Use utility function to check if dose should be marked as missed
+      if (shouldBeMarkedAsMissed(doseLog as any, userTimezone, now)) {
+        missedDoseIds.push(doseLog.id)
+      }
+    }
+
+    // Update missed doses in database
+    if (missedDoseIds.length > 0) {
+      await prisma.doseLog.updateMany({
+        where: {
+          id: {
+            in: missedDoseIds,
+          },
+        },
+        data: {
+          status: 'MISSED',
+        },
+      })
+
+      // Update the doseLogs array to reflect the new status
+      for (const doseLog of doseLogs) {
+        if (missedDoseIds.includes(doseLog.id)) {
+          doseLog.status = 'MISSED'
+        }
+      }
+    }
 
     return NextResponse.json(doseLogs)
   } catch (error) {

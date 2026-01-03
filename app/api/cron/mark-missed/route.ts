@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/prisma-client'
 import { getUserIdFromSession } from '@/lib/session'
-import { nowInTz, tzDayRangeToUtc, isTodayInTz } from '@/lib/medication-utils'
+import { shouldBeMarkedAsMissed } from '@/lib/dose-utils'
+import { toZonedTime } from 'date-fns-tz'
 
 /**
  * Cron job to mark missed doses
  * Should run daily at 00:05 in each user's timezone
+ *
+ * Marks all past doses (not just yesterday) and today's doses that have passed
+ * their scheduled time as MISSED.
  *
  * Usage: POST /api/cron/mark-missed
  * Headers: Authorization: Bearer <token> (for testing)
@@ -37,24 +41,20 @@ export async function POST(request: NextRequest) {
 
     let totalMarked = 0
     const results = []
+    const now = new Date()
 
     for (const user of users) {
       const userTimezone = user.settings?.timezone || timezone
 
-      // Get yesterday's range in user's timezone
-      const yesterday = new Date()
-      yesterday.setDate(yesterday.getDate() - 1)
-      const yesterdayRange = tzDayRangeToUtc(userTimezone, yesterday)
+      // Get current time in user's timezone for comparison
+      const nowInUserTz = toZonedTime(now, userTimezone)
 
-      // Find all scheduled doses from yesterday that weren't taken or skipped
-      const missedDoses = await prisma.doseLog.findMany({
+      // Find all scheduled doses that should be marked as missed
+      // We check all doses with status SCHEDULED and filter by time
+      const allScheduledDoses = await prisma.doseLog.findMany({
         where: {
           prescription: {
             userId: user.id
-          },
-          scheduledFor: {
-            gte: yesterdayRange.start,
-            lt: yesterdayRange.end
           },
           status: 'SCHEDULED'
         },
@@ -65,6 +65,15 @@ export async function POST(request: NextRequest) {
             }
           }
         }
+      })
+
+      // Filter doses that should be marked as missed
+      const missedDoses = allScheduledDoses.filter(dose => {
+        const scheduledFor = new Date(dose.scheduledFor)
+        const scheduledInTz = toZonedTime(scheduledFor, userTimezone)
+
+        // Mark as missed if scheduled time has passed
+        return scheduledInTz < nowInUserTz
       })
 
       if (missedDoses.length > 0) {
