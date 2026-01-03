@@ -47,6 +47,16 @@ export function QuickSettings({ settings, onUpdate }: QuickSettingsProps) {
     return getTimezonesWithCurrent(currentTz)
   }, [settings?.timezone, timezone])
 
+  const applyBrowserTimezone = () => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+      if (!tz) throw new Error('Timezone not available')
+      setTimezone(tz)
+    } catch {
+      alert('Unable to detect your timezone in this browser.')
+    }
+  }
+
   return (
     <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 space-y-4">
       <div className="flex items-center gap-2">
@@ -61,18 +71,29 @@ export function QuickSettings({ settings, onUpdate }: QuickSettingsProps) {
             <Globe className="w-3 h-3" />
             Timezone
           </label>
-          <Select value={timezone} onValueChange={setTimezone}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {timezones.map((tz) => (
-                <SelectItem key={tz.value} value={tz.value}>
-                  {tz.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={timezone} onValueChange={setTimezone}>
+              <SelectTrigger className="flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {timezones.map((tz) => (
+                  <SelectItem key={tz.value} value={tz.value}>
+                    {tz.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={applyBrowserTimezone}
+              className="whitespace-nowrap"
+            >
+              Use my timezone
+            </Button>
+          </div>
         </div>
 
         {/* Time Format */}

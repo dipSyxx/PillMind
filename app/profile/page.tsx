@@ -1087,14 +1087,16 @@ export default function ProfilePage() {
                   transition={{ duration: 0.4 }}
                   className="space-y-8"
                 >
-                  <div className="bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-[16px] p-6 border border-[#E2E8F0]">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-[#0EA8BC]/10 rounded-[12px] flex items-center justify-center">
-                        <SettingsIcon className="w-6 h-6 text-[#0EA8BC]" />
+                  <div className="bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-[16px] p-4 sm:p-6 border border-[#E2E8F0]">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#0EA8BC]/10 rounded-[12px] flex items-center justify-center flex-shrink-0">
+                        <SettingsIcon className="w-5 h-5 sm:w-6 sm:h-6 text-[#0EA8BC]" />
                       </div>
                       <div>
-                        <h2 className="text-xl font-bold text-[#0F172A]">User Settings</h2>
-                        <p className="text-[#64748B]">Timezone, time format, and default notification channels</p>
+                        <h2 className="text-lg sm:text-xl font-bold text-[#0F172A]">User Settings</h2>
+                        <p className="text-sm sm:text-base text-[#64748B]">
+                          Timezone, time format, and default notification channels
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -1111,14 +1113,14 @@ export default function ProfilePage() {
                   ) : settings ? (
                     <form onSubmit={saveSettings} className="space-y-6">
                       {/* Timezone */}
-                      <div className="p-4 bg-white border border-[#E2E8F0] rounded-[12px]">
+                      <div className="p-4 sm:p-6 bg-white border border-[#E2E8F0] rounded-[12px]">
                         <label className="block text-sm font-medium text-[#0F172A] mb-2">Timezone (IANA)</label>
-                        <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row gap-2">
                           <Select
                             value={settings.timezone}
                             onValueChange={(value) => setSettings({ ...settings, timezone: value })}
                           >
-                            <SelectTrigger className="flex-1">
+                            <SelectTrigger className="flex-1 w-full sm:w-auto">
                               <SelectValue placeholder="Select timezone" />
                             </SelectTrigger>
                             <SelectContent>
@@ -1129,7 +1131,12 @@ export default function ProfilePage() {
                               ))}
                             </SelectContent>
                           </Select>
-                          <Button type="button" variant="outline" onClick={applyBrowserTimezone}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={applyBrowserTimezone}
+                            className="whitespace-nowrap w-full sm:w-auto"
+                          >
                             Use my timezone
                           </Button>
                         </div>
@@ -1139,11 +1146,11 @@ export default function ProfilePage() {
                       </div>
 
                       {/* Time format */}
-                      <div className="p-4 bg-white border border-[#E2E8F0] rounded-[12px]">
+                      <div className="p-4 sm:p-6 bg-white border border-[#E2E8F0] rounded-[12px]">
                         <label className="block text-sm font-medium text-[#0F172A] mb-2">Time format</label>
 
                         <RadioGroup
-                          className="flex flex-wrap gap-3"
+                          className="flex flex-col sm:flex-row flex-wrap gap-3"
                           value={settings.timeFormat}
                           onValueChange={(v) => setSettings({ ...settings, timeFormat: v as TimeFormat })}
                         >
@@ -1151,7 +1158,7 @@ export default function ProfilePage() {
                           <label
                             htmlFor="tf-24"
                             className={cn(
-                              'inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition',
+                              'inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition w-full sm:w-auto',
                               settings.timeFormat === 'H24'
                                 ? 'border-[#0EA8BC] bg-[#0EA8BC]/5'
                                 : 'border-slate-200 hover:bg-slate-50',
@@ -1165,7 +1172,7 @@ export default function ProfilePage() {
                           <label
                             htmlFor="tf-12"
                             className={cn(
-                              'inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition',
+                              'inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition w-full sm:w-auto',
                               settings.timeFormat === 'H12'
                                 ? 'border-[#0EA8BC] bg-[#0EA8BC]/5'
                                 : 'border-slate-200 hover:bg-slate-50',
@@ -1178,7 +1185,7 @@ export default function ProfilePage() {
                       </div>
 
                       {/* Default channels */}
-                      <div className="p-4 bg-white border border-[#E2E8F0] rounded-[12px]">
+                      <div className="p-4 sm:p-6 bg-white border border-[#E2E8F0] rounded-[12px]">
                         <label className="block text-sm font-medium text-[#0F172A] mb-2">
                           Default notification channels
                         </label>
@@ -1193,7 +1200,7 @@ export default function ProfilePage() {
                       </div>
 
                       <div className="flex justify-end">
-                        <Button type="submit" variant="pillmind" disabled={loading}>
+                        <Button type="submit" variant="pillmind" disabled={loading} className="w-full sm:w-auto">
                           {loading ? (
                             <div className="flex items-center gap-2">
                               <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
