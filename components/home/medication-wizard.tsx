@@ -9,7 +9,7 @@ import { WEEKDAYS, weekdayLabelShort } from '@/lib/medication-utils'
 import { cn } from '@/lib/utils'
 import { DraftMedication, MedForm, RouteKind, TimeFormat, Unit, Weekday } from '@/types/medication'
 import { format } from 'date-fns'
-import { Check, Loader2 } from 'lucide-react'
+import { Check, Clock, Loader2, Plus, Trash2 } from 'lucide-react'
 import React, { useEffect, useMemo, useState } from 'react'
 
 const FORM_OPTIONS: MedForm[] = ['TABLET', 'CAPSULE', 'LIQUID', 'INJECTION', 'INHALER', 'TOPICAL', 'DROPS', 'OTHER']
@@ -57,7 +57,7 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     doseQuantity: initial?.doseQuantity ?? 1,
     doseUnit: initial?.doseUnit ?? 'TAB',
     daysOfWeek: initial?.daysOfWeek ?? ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
-    times: initial?.times ?? ['08:00', '20:00'],
+    times: initial?.times ?? [],
     inventoryCurrentQty: initial?.inventoryCurrentQty ?? 30,
     inventoryUnit: initial?.inventoryUnit ?? initial?.doseUnit ?? 'TAB',
     inventoryLowThreshold: initial?.inventoryLowThreshold ?? 10,
@@ -615,11 +615,14 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-[#334155] mb-2">Times (24h "HH:mm") *</div>
+                  <div className="text-sm font-medium text-[#334155] mb-2">
+                    Times ({timeFormat === 'H12' ? '12-hour' : '24-hour'}) *
+                  </div>
                   <TimesEditor
                     value={draft.times}
                     onChange={(arr) => update('times', arr)}
-                    placeholder="08:00, 20:00"
+                    timezone={timezone}
+                    timeFormat={timeFormat}
                     invalid={step4Touched && scheduleTimesMissing}
                     onInputFocus={handleInputFocus}
                   />
@@ -695,51 +698,222 @@ function StepDot({ active, done, children }: { active?: boolean; done?: boolean;
   )
 }
 
+/**
+ * Convert HH:mm (24h) to display format (H12 or H24)
+ */
+function formatTimeForDisplay(time24h: string, timeFormat: TimeFormat): string {
+  if (!time24h || !time24h.match(/^\d{2}:\d{2}$/)) return time24h
+  if (timeFormat === 'H24') return time24h
+
+  // Convert to H12 format
+  const [hours, minutes] = time24h.split(':').map(Number)
+  const hour12 = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours
+  const period = hours < 12 ? 'AM' : 'PM'
+  return `${hour12}:${String(minutes).padStart(2, '0')} ${period}`
+}
+
+/**
+ * Convert display format (H12 or H24) to HH:mm (24h)
+ */
+function parseTimeFromDisplay(timeStr: string, timeFormat: TimeFormat): string | null {
+  if (!timeStr) return null
+
+  if (timeFormat === 'H24') {
+    // Parse 24h format: HH:mm or H:mm
+    const match = timeStr.trim().match(/^(\d{1,2}):(\d{1,2})$/)
+    if (!match) return null
+    const hours = Math.min(23, Math.max(0, Number(match[1])))
+    const minutes = Math.min(59, Math.max(0, Number(match[2])))
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+  } else {
+    // Parse 12h format: h:mm AM/PM, hh:mm AM/PM, h:mmAM/PM, etc.
+    // Allow flexible spacing and case
+    const trimmed = timeStr.trim()
+    const match = trimmed.match(/^(\d{1,2}):(\d{1,2})\s*(AM|PM|am|pm)$/i)
+    if (!match) return null
+    let hours = Number(match[1])
+    const minutes = Math.min(59, Math.max(0, Number(match[2])))
+    const period = match[3].toUpperCase()
+
+    // Validate hours for 12h format
+    if (hours < 1 || hours > 12) return null
+
+    if (period === 'PM' && hours !== 12) hours += 12
+    if (period === 'AM' && hours === 12) hours = 0
+
+    hours = Math.min(23, Math.max(0, hours))
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+  }
+}
+
 function TimesEditor({
   value,
   onChange,
-  placeholder,
+  timezone,
+  timeFormat,
   invalid = false,
   onInputFocus,
 }: {
-  value: string[]
+  value: string[] // масив часів у форматі "HH:mm" (24h)
   onChange: (v: string[]) => void
-  placeholder?: string
+  timezone: string
+  timeFormat: TimeFormat
   invalid?: boolean
   onInputFocus?: (e: React.FocusEvent<HTMLInputElement>) => void
 }) {
-  const [draft, setDraft] = useState(value.join(', '))
-  useEffect(() => setDraft(value.join(', ')), [value])
+  // Time picker state
+  const [hour, setHour] = useState<string>('08')
+  const [minute, setMinute] = useState<string>('00')
+  const [period, setPeriod] = useState<'AM' | 'PM'>('AM')
+  const [error, setError] = useState<string | null>(null)
 
-  function apply() {
-    const clean = draft
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((s) => {
-        // normalize 8:0 -> 08:00
-        const m = s.match(/^(\d{1,2}):(\d{1,2})$/)
-        if (!m) return s
-        const hh = String(Math.min(23, Number(m[1]))).padStart(2, '0')
-        const mm = String(Math.min(59, Number(m[2]))).padStart(2, '0')
-        return `${hh}:${mm}`
-      })
-    onChange(Array.from(new Set(clean)))
+  // Sort times
+  const sortedTimes = useMemo(() => {
+    return [...value].sort((a, b) => {
+      const [h1, m1] = a.split(':').map(Number)
+      const [h2, m2] = b.split(':').map(Number)
+      return h1 * 60 + m1 - (h2 * 60 + m2)
+    })
+  }, [value])
+
+  // Generate hour options based on format
+  const hourOptions = useMemo(() => {
+    if (timeFormat === 'H24') {
+      return Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'))
+    } else {
+      return Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
+    }
+  }, [timeFormat])
+
+  // Generate minute options (00-59)
+  const minuteOptions = useMemo(() => {
+    return Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'))
+  }, [])
+
+  function addTime() {
+    // Convert to 24h format
+    let hours24 = Number(hour)
+    if (timeFormat === 'H12') {
+      if (period === 'PM' && hours24 !== 12) hours24 += 12
+      if (period === 'AM' && hours24 === 12) hours24 = 0
+    }
+
+    const time24h = `${String(hours24).padStart(2, '0')}:${minute}`
+
+    // Check if time already exists
+    if (value.includes(time24h)) {
+      setError('This time is already added')
+      return
+    }
+
+    setError(null)
+    onChange(
+      [...value, time24h].sort((a, b) => {
+        const [h1, m1] = a.split(':').map(Number)
+        const [h2, m2] = b.split(':').map(Number)
+        return h1 * 60 + m1 - (h2 * 60 + m2)
+      }),
+    )
+
+    // Reset to default
+    setHour('08')
+    setMinute('00')
+    setPeriod('AM')
+  }
+
+  function removeTime(time24h: string) {
+    onChange(value.filter((t) => t !== time24h))
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-2">
-      <Input
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        placeholder={placeholder}
-        className={cn('flex-1', invalid && 'border-red-400 focus-visible:ring-red-400')}
-        aria-invalid={invalid ? 'true' : undefined}
-        onFocus={onInputFocus}
-      />
-      <Button variant="pillmindOutline" onClick={apply} className="rounded-xl h-11 sm:h-10 w-full sm:w-auto">
-        Apply
-      </Button>
+    <div className={cn('space-y-2', invalid && 'border border-red-400 rounded-lg p-2')}>
+      {/* Time list */}
+      {sortedTimes.length > 0 && (
+        <div className="space-y-2">
+          {sortedTimes.map((time24h) => (
+            <div
+              key={time24h}
+              className="flex items-center justify-between p-2 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg hover:border-[#0EA8BC]/30 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#64748B]" />
+                <span className="text-sm font-medium text-[#0F172A]">{formatTimeForDisplay(time24h, timeFormat)}</span>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => removeTime(time24h)}
+                className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                aria-label="Remove time"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add new time */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          {/* Hour selector */}
+          <Select value={hour} onValueChange={setHour}>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {hourOptions.map((h) => (
+                <SelectItem key={h} value={h}>
+                  {h}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <span className="text-[#64748B] font-medium">:</span>
+
+          {/* Minute selector */}
+          <Select value={minute} onValueChange={setMinute}>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {minuteOptions.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {m}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* AM/PM selector for H12 format */}
+          {timeFormat === 'H12' && (
+            <Select value={period} onValueChange={(v) => setPeriod(v as 'AM' | 'PM')}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="AM">AM</SelectItem>
+                <SelectItem value="PM">PM</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
+          <Button
+            type="button"
+            variant="pillmindOutline"
+            onClick={addTime}
+            className="rounded-xl h-11 sm:h-10 flex-1 sm:flex-initial"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add time
+          </Button>
+        </div>
+        {error && <p className="text-xs text-red-500">{error}</p>}
+      </div>
+
+      {invalid && !error && <p className="text-xs text-red-500">At least one time is required</p>}
     </div>
   )
 }
