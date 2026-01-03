@@ -14,7 +14,7 @@ import {
 import { Drawer, DrawerContent } from '@/components/ui/drawer'
 import { useUserActions, useUserData } from '@/hooks/useUserStore'
 import { DraftMedication, Inventory, Medication, Prescription } from '@/types/medication'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { MedicationDetails } from './medication-details'
 import { MedicationList } from './medication-list'
 import { MedicationWizard } from './medication-wizard'
@@ -29,6 +29,8 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
   const { updateMedication, removeMedication, initialize } = useUserActions()
 
   const [selectedMedication, setSelectedMedication] = useState<Medication | null>(null)
+  const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string | null>(null)
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
@@ -92,7 +94,7 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
 
     try {
       // Update medication
-      const response = await fetch(`/api/medications/${selectedMedication.id}`, {
+      const medicationResponse = await fetch(`/api/medications/${selectedMedication.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -106,14 +108,114 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
         }),
       })
 
-      if (response.ok) {
-        const updated = await response.json()
-        updateMedication(selectedMedication.id, updated)
-        setIsEditOpen(false)
-        setSelectedMedication(null)
-        // Refresh data
-        await initialize()
+      if (!medicationResponse.ok) {
+        throw new Error('Failed to update medication')
       }
+
+      const updatedMedication = await medicationResponse.json()
+      updateMedication(selectedMedication.id, updatedMedication)
+
+      // Update or create prescription
+      if (selectedPrescriptionId) {
+        // Update existing prescription
+        const prescriptionResponse = await fetch(`/api/prescriptions/${selectedPrescriptionId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            indication: draft.indication,
+            asNeeded: draft.asNeeded,
+            maxDailyDose: draft.maxDailyDose,
+            instructions: draft.instructions,
+          }),
+        })
+
+        if (!prescriptionResponse.ok) {
+          console.error('Failed to update prescription')
+        }
+      } else {
+        // Create new prescription if medication doesn't have one
+        const prescriptionResponse = await fetch('/api/prescriptions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            medicationId: selectedMedication.id,
+            indication: draft.indication,
+            asNeeded: draft.asNeeded,
+            maxDailyDose: draft.maxDailyDose,
+            instructions: draft.instructions,
+            startDate: new Date().toISOString(),
+          }),
+        })
+
+        if (prescriptionResponse.ok) {
+          const newPrescription = await prescriptionResponse.json()
+          setSelectedPrescriptionId(newPrescription.id)
+        } else {
+          console.error('Failed to create prescription')
+        }
+      }
+
+      // Update or create schedule (only if not asNeeded)
+      if (!draft.asNeeded && selectedPrescriptionId) {
+        if (selectedScheduleId) {
+          // Update existing schedule
+          const scheduleResponse = await fetch(`/api/schedules/${selectedScheduleId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              timezone: timezone,
+              daysOfWeek: draft.daysOfWeek,
+              times: draft.times,
+              doseQuantity: draft.doseQuantity,
+              doseUnit: draft.doseUnit,
+            }),
+          })
+
+          if (!scheduleResponse.ok) {
+            console.error('Failed to update schedule')
+          }
+        } else {
+          // Create new schedule
+          const scheduleResponse = await fetch(`/api/prescriptions/${selectedPrescriptionId}/schedules`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              timezone: timezone,
+              daysOfWeek: draft.daysOfWeek,
+              times: draft.times,
+              doseQuantity: draft.doseQuantity,
+              doseUnit: draft.doseUnit,
+            }),
+          })
+
+          if (!scheduleResponse.ok) {
+            console.error('Failed to create schedule')
+          }
+        }
+      }
+
+      // Update or create inventory
+      const inventoryResponse = await fetch(`/api/medications/${selectedMedication.id}/inventory`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentQty: draft.inventoryCurrentQty ?? 0,
+          unit: draft.inventoryUnit || 'TAB',
+          lowThreshold: draft.inventoryLowThreshold,
+          lastRestockedAt: draft.inventoryLastRestockedAt,
+        }),
+      })
+
+      if (!inventoryResponse.ok) {
+        console.error('Failed to update inventory')
+      }
+
+      setIsEditOpen(false)
+      setSelectedMedication(null)
+      setSelectedPrescriptionId(null)
+      setSelectedScheduleId(null)
+      // Refresh data
+      await initialize()
     } catch (error) {
       console.error('Error updating medication:', error)
     }
@@ -132,6 +234,91 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
         | (Medication & { inventory?: Inventory | null })
         | undefined)
     : null
+
+  // Collect all data for editing medication
+  const editInitialData = useMemo(() => {
+    if (!selectedMedication || !isEditOpen) return null
+
+    const medication = medications.find((m) => m.id === selectedMedication.id)
+    if (!medication) return null
+
+    // Get prescriptions for this medication
+    const medPrescriptions = prescriptionsByMedId.get(medication.id) || []
+    // Find the first (or most recent) prescription
+    const prescription =
+      medPrescriptions.length > 0
+        ? medPrescriptions.sort((a, b) => {
+            // Sort by startDate descending to get the most recent
+            const aDate = new Date(a.startDate).getTime()
+            const bDate = new Date(b.startDate).getTime()
+            return bDate - aDate
+          })[0]
+        : null
+
+    // Get the first schedule from the prescription
+    const schedule = prescription?.schedules && prescription.schedules.length > 0 ? prescription.schedules[0] : null
+
+    // Get inventory data
+    const inventory = medication.inventory || null
+
+    // Build initial data object
+    return {
+      // Medication data
+      name: medication.name,
+      brandName: medication.brandName || undefined,
+      form: medication.form,
+      strengthValue: medication.strengthValue ? Number(medication.strengthValue) : undefined,
+      strengthUnit: medication.strengthUnit || undefined,
+      route: medication.route || undefined,
+      notes: medication.notes || undefined,
+      // Prescription data
+      asNeeded: prescription?.asNeeded ?? false,
+      indication: prescription?.indication || undefined,
+      instructions: prescription?.instructions || undefined,
+      maxDailyDose: prescription?.maxDailyDose ? Number(prescription.maxDailyDose) : undefined,
+      // Schedule data
+      daysOfWeek: schedule?.daysOfWeek || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
+      times: schedule?.times || [],
+      doseQuantity: schedule?.doseQuantity ? Number(schedule.doseQuantity) : 1,
+      doseUnit: schedule?.doseUnit || 'TAB',
+      // Inventory data
+      inventoryCurrentQty: inventory?.currentQty ? Number(inventory.currentQty) : 30,
+      inventoryUnit: inventory?.unit || schedule?.doseUnit || 'TAB',
+      inventoryLowThreshold: inventory?.lowThreshold ? Number(inventory.lowThreshold) : 10,
+      inventoryLastRestockedAt: inventory?.lastRestockedAt || undefined,
+    }
+  }, [selectedMedication, medications, prescriptionsByMedId, isEditOpen])
+
+  // Store prescription and schedule IDs when edit data is prepared
+  useEffect(() => {
+    if (!selectedMedication || !isEditOpen) {
+      setSelectedPrescriptionId(null)
+      setSelectedScheduleId(null)
+      return
+    }
+
+    const medication = medications.find((m) => m.id === selectedMedication.id)
+    if (!medication) {
+      setSelectedPrescriptionId(null)
+      setSelectedScheduleId(null)
+      return
+    }
+
+    const medPrescriptions = prescriptionsByMedId.get(medication.id) || []
+    const prescription =
+      medPrescriptions.length > 0
+        ? medPrescriptions.sort((a, b) => {
+            const aDate = new Date(a.startDate).getTime()
+            const bDate = new Date(b.startDate).getTime()
+            return bDate - aDate
+          })[0]
+        : null
+
+    const schedule = prescription?.schedules && prescription.schedules.length > 0 ? prescription.schedules[0] : null
+
+    setSelectedPrescriptionId(prescription?.id || null)
+    setSelectedScheduleId(schedule?.id || null)
+  }, [selectedMedication, medications, prescriptionsByMedId, isEditOpen])
 
   return (
     <div className="min-h-dvh bg-gradient-to-b from-[#F8FAFC] to-[#E2E8F0] pb-[88px]">
@@ -177,26 +364,17 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
       )}
 
       {/* Edit Medication Drawer */}
-      {selectedMedication && isEditOpen && (
+      {selectedMedication && isEditOpen && editInitialData && (
         <Drawer open={isEditOpen} onOpenChange={setIsEditOpen} direction="bottom">
           <DrawerContent className="p-0">
             <MedicationWizard
               mode="edit"
-              initial={{
-                name: selectedMedication.name,
-                brandName: selectedMedication.brandName || undefined,
-                form: selectedMedication.form,
-                strengthValue: selectedMedication.strengthValue || undefined,
-                strengthUnit: selectedMedication.strengthUnit || undefined,
-                route: selectedMedication.route || undefined,
-                notes: selectedMedication.notes || undefined,
-                asNeeded: false,
-                daysOfWeek: [],
-                times: [],
-              }}
+              initial={editInitialData}
               onClose={() => {
                 setIsEditOpen(false)
                 setSelectedMedication(null)
+                setSelectedPrescriptionId(null)
+                setSelectedScheduleId(null)
               }}
               onSaved={handleSaveEdit}
               timezone={timezone}

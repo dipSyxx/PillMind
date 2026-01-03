@@ -65,6 +65,36 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
   })
   const [touchedSteps, setTouchedSteps] = useState<WizardStep[]>([])
 
+  // Update draft when initial prop changes
+  useEffect(() => {
+    if (initial) {
+      setDraft({
+        name: initial.name ?? '',
+        brandName: initial.brandName ?? '',
+        form: initial.form ?? 'TABLET',
+        strengthValue: initial.strengthValue,
+        strengthUnit: initial.strengthUnit ?? 'MG',
+        route: initial.route ?? 'ORAL',
+        notes: initial.notes ?? '',
+        asNeeded: initial.asNeeded ?? false,
+        indication: initial.indication ?? '',
+        instructions: initial.instructions ?? '',
+        maxDailyDose: initial.maxDailyDose,
+        doseQuantity: initial.doseQuantity ?? 1,
+        doseUnit: initial.doseUnit ?? 'TAB',
+        daysOfWeek: initial.daysOfWeek ?? ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
+        times: initial.times ?? [],
+        inventoryCurrentQty: initial.inventoryCurrentQty ?? 30,
+        inventoryUnit: initial.inventoryUnit ?? initial.doseUnit ?? 'TAB',
+        inventoryLowThreshold: initial.inventoryLowThreshold ?? 10,
+        inventoryLastRestockedAt: initial.inventoryLastRestockedAt,
+      })
+      // Reset to first step when initial changes
+      setStep(1)
+      setTouchedSteps([])
+    }
+  }, [initial])
+
   const restockedDateInputValue =
     draft.inventoryLastRestockedAt && !Number.isNaN(new Date(draft.inventoryLastRestockedAt).getTime())
       ? format(new Date(draft.inventoryLastRestockedAt), 'yyyy-MM-dd')
