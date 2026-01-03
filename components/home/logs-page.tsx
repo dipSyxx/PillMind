@@ -1,16 +1,15 @@
 'use client'
 
-import React, { useState, useMemo, useEffect } from 'react'
-import { Download, FileText } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { LogsFilters, type DateFilter } from './logs-filters'
-import { LogsTimeline } from './logs-timeline'
-import { LogsStats } from './logs-stats'
-import { DoseLog, Medication, TimeFormat } from '@/types/medication'
-import { useUserData, useUserActions } from '@/hooks/useUserStore'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
-import { startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
-import { parseISO } from 'date-fns'
+import { Button } from '@/components/ui/button'
+import { useUserActions, useUserData } from '@/hooks/useUserStore'
+import { TimeFormat } from '@/types/medication'
+import { endOfDay, endOfMonth, endOfWeek, parseISO, startOfDay, startOfMonth, startOfWeek } from 'date-fns'
+import { Download } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { LogsFilters, type DateFilter } from './logs-filters'
+import { LogsStats } from './logs-stats'
+import { LogsTimeline } from './logs-timeline'
 
 interface LogsPageProps {
   timezone: string
@@ -19,7 +18,7 @@ interface LogsPageProps {
 
 export function LogsPage({ timezone, timeFormat }: LogsPageProps) {
   const { medications, doseLogs, isLoading } = useUserData()
-  const { initialize } = useUserActions()
+  const { setDoseLogs } = useUserActions()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
@@ -125,12 +124,18 @@ export function LogsPage({ timezone, timeFormat }: LogsPageProps) {
     }
   }
 
+  // Load dose logs on mount if not already loaded
   useEffect(() => {
-    // Load dose logs when filters change
-    if (dateRange?.from && dateRange?.to) {
-      initialize()
+    if (!doseLogs || doseLogs.length === 0) {
+      // Load all dose logs if none are loaded
+      fetch('/api/dose')
+        .then((res) => res.json())
+        .then((logs) => {
+          setDoseLogs(logs)
+        })
+        .catch((err) => console.error('Failed to load dose logs:', err))
     }
-  }, [dateRange, initialize])
+  }, [doseLogs, setDoseLogs]) // Only run when doseLogs is empty
 
   if (isLoading) {
     return (
@@ -206,4 +211,3 @@ export function LogsPage({ timezone, timeFormat }: LogsPageProps) {
     </div>
   )
 }
-

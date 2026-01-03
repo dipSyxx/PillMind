@@ -72,18 +72,18 @@ export function QuickSettings({ settings, onUpdate }: QuickSettingsProps) {
             Timezone
           </label>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Select value={timezone} onValueChange={setTimezone}>
+          <Select value={timezone} onValueChange={setTimezone}>
               <SelectTrigger className="flex-1">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
                 {timezones.map((tz) => (
-                  <SelectItem key={tz.value} value={tz.value}>
-                    {tz.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <SelectItem key={tz.value} value={tz.value}>
+                  {tz.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
             <Button
               type="button"
               variant="outline"

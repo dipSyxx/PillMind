@@ -1,15 +1,14 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Search, Filter, Calendar, X } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar as CalendarComponent } from '@/components/ui/calendar'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { DoseStatus, Medication } from '@/types/medication'
 import { format } from 'date-fns'
-import { cn } from '@/lib/utils'
+import { Calendar, Search, X } from 'lucide-react'
+import { useState } from 'react'
 
 export type DateFilter = 'today' | 'week' | 'month' | 'custom' | 'all'
 
@@ -163,4 +162,3 @@ export function LogsFilters({
     </div>
   )
 }
-
