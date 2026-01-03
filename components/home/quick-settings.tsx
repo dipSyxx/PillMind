@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState } from 'react'
-import { Settings, Globe, Clock, Save } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select'
-import { UserSettings, TimeFormat } from '@/types/medication'
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getTimezonesWithCurrent } from '@/lib/timezones'
+import { TimeFormat, UserSettings } from '@/types/medication'
+import { Clock, Globe, Save, Settings } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
 
 interface QuickSettingsProps {
   settings: UserSettings | null
@@ -16,6 +17,16 @@ export function QuickSettings({ settings, onUpdate }: QuickSettingsProps) {
   const [timezone, setTimezone] = useState(settings?.timezone || 'UTC')
   const [timeFormat, setTimeFormat] = useState<TimeFormat>(settings?.timeFormat || 'H24')
   const [isSaving, setIsSaving] = useState(false)
+
+  // Update state when settings change
+  useEffect(() => {
+    if (settings?.timezone) {
+      setTimezone(settings.timezone)
+    }
+    if (settings?.timeFormat) {
+      setTimeFormat(settings.timeFormat)
+    }
+  }, [settings])
 
   const handleSave = async () => {
     setIsSaving(true)
@@ -28,23 +39,13 @@ export function QuickSettings({ settings, onUpdate }: QuickSettingsProps) {
     }
   }
 
-  const hasChanges =
-    timezone !== (settings?.timezone || 'UTC') || timeFormat !== (settings?.timeFormat || 'H24')
+  const hasChanges = timezone !== (settings?.timezone || 'UTC') || timeFormat !== (settings?.timeFormat || 'H24')
 
-  // Common timezones
-  const commonTimezones = [
-    { value: 'UTC', label: 'UTC' },
-    { value: 'America/New_York', label: 'Eastern Time (ET)' },
-    { value: 'America/Chicago', label: 'Central Time (CT)' },
-    { value: 'America/Denver', label: 'Mountain Time (MT)' },
-    { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
-    { value: 'Europe/London', label: 'London (GMT)' },
-    { value: 'Europe/Paris', label: 'Paris (CET)' },
-    { value: 'Europe/Kyiv', label: 'Kyiv (EET)' },
-    { value: 'Asia/Tokyo', label: 'Tokyo (JST)' },
-    { value: 'Asia/Shanghai', label: 'Shanghai (CST)' },
-    { value: 'Australia/Sydney', label: 'Sydney (AEDT)' },
-  ]
+  // Get timezones list with current timezone included if needed
+  const timezones = React.useMemo(() => {
+    const currentTz = settings?.timezone || timezone
+    return getTimezonesWithCurrent(currentTz)
+  }, [settings?.timezone, timezone])
 
   return (
     <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 space-y-4">
@@ -65,7 +66,7 @@ export function QuickSettings({ settings, onUpdate }: QuickSettingsProps) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {commonTimezones.map((tz) => (
+              {timezones.map((tz) => (
                 <SelectItem key={tz.value} value={tz.value}>
                   {tz.label}
                 </SelectItem>
@@ -94,13 +95,7 @@ export function QuickSettings({ settings, onUpdate }: QuickSettingsProps) {
 
       {/* Save Button */}
       {hasChanges && (
-        <Button
-          variant="pillmind"
-          size="sm"
-          onClick={handleSave}
-          disabled={isSaving}
-          className="w-full"
-        >
+        <Button variant="pillmind" size="sm" onClick={handleSave} disabled={isSaving} className="w-full">
           {isSaving ? (
             <>
               <LoadingSpinner size="sm" className="mr-2" />
@@ -117,4 +112,3 @@ export function QuickSettings({ settings, onUpdate }: QuickSettingsProps) {
     </div>
   )
 }
-

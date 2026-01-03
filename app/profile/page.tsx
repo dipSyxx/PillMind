@@ -6,6 +6,8 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { PasswordStrength } from '@/components/ui/password-strength'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { getTimezonesWithCurrent } from '@/lib/timezones'
 import { cn } from '@/lib/utils'
 import {
   changePasswordSchema,
@@ -1112,17 +1114,28 @@ export default function ProfilePage() {
                       <div className="p-4 bg-white border border-[#E2E8F0] rounded-[12px]">
                         <label className="block text-sm font-medium text-[#0F172A] mb-2">Timezone (IANA)</label>
                         <div className="flex gap-2">
-                          <Input
+                          <Select
                             value={settings.timezone}
-                            onChange={(e) => setSettings({ ...settings, timezone: e.target.value })}
-                            placeholder="e.g. Europe/Oslo"
-                            className="flex-1"
-                          />
+                            onValueChange={(value) => setSettings({ ...settings, timezone: value })}
+                          >
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Select timezone" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getTimezonesWithCurrent(settings.timezone).map((tz) => (
+                                <SelectItem key={tz.value} value={tz.value}>
+                                  {tz.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <Button type="button" variant="outline" onClick={applyBrowserTimezone}>
                             Use my timezone
                           </Button>
                         </div>
-                        <p className="mt-1 text-xs text-[#64748B]">Example: Europe/Oslo, America/New_York, Asia/Kyiv</p>
+                        <p className="mt-1 text-xs text-[#64748B]">
+                          Your timezone is used for scheduling doses and displaying times
+                        </p>
                       </div>
 
                       {/* Time format */}
