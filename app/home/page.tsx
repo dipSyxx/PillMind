@@ -17,7 +17,6 @@ import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerTrigger } from '@/components/ui/drawer'
 import { useUserActions, useUserData } from '@/hooks/useUserStore'
-import { analyticsService } from '@/lib/api/analytics-service'
 import { medicationService } from '@/lib/api/medication-service'
 import { pillMindService } from '@/lib/api/pillmind-service'
 import { addDays, dayKeyInTz, isTodayInTz, startOfWeek, statusByDay } from '@/lib/medication-utils'
@@ -65,6 +64,15 @@ export default function HomePage() {
 
   const weekStart = startOfWeek(selectedDate)
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+
+  // Check if current week is different from selected week (using user timezone)
+  const now = new Date()
+  const currentWeekStart = startOfWeek(now)
+  const selectedWeekStart = startOfWeek(selectedDate)
+  // Compare by day keys to account for timezone differences
+  const currentWeekKey = dayKeyInTz(currentWeekStart, userSettings.timezone)
+  const selectedWeekKey = dayKeyInTz(selectedWeekStart, userSettings.timezone)
+  const isCurrentWeek = currentWeekKey === selectedWeekKey
 
   // Function to load dose logs for selected week
   const loadWeekDoseLogs = async (weekStartDate: Date) => {
@@ -327,43 +335,20 @@ export default function HomePage() {
                 <h1 className="text-2xl font-bold text-[#0F172A]">PillMind</h1>
                 <p className="text-sm text-[#64748B]">Stay on track with your meds</p>
               </div>
-              <Button
-                variant="pillmindGhost"
-                size="sm"
-                className="rounded-xl"
-                onClick={async () => {
-                  try {
-                    // Get comprehensive weekly report with advanced analytics
-                    const weekStart = startOfWeek(selectedDate)
-                    const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000)
-
-                    const weeklyReport = await analyticsService.getWeeklyReport(weekStart.toISOString())
-
-                    // Get dashboard data
-                    const dashboardData = await fetch('/api/dashboard').then((res) => res.json())
-
-                    // Get comprehensive report with all features
-                    const comprehensiveReport = await pillMindService.generateComprehensiveReport({
-                      from: weekStart.toISOString(),
-                      to: weekEnd.toISOString(),
-                      includeAnalytics: true,
-                      includeInventory: true,
-                      includePredictions: true,
-                      includeRecommendations: true,
-                    })
-
-                    // You can show this data in a modal or navigate to a dashboard page
-                    alert(
-                      `Weekly Adherence: ${weeklyReport.overallMetrics.adherenceRate}%\nInsights: ${weeklyReport.insights.join(', ')}`,
-                    )
-                  } catch (error) {
-                    console.error('Failed to fetch analytics data:', error)
-                  }
-                }}
-              >
-                <CalendarDays className="w-4 h-4 mr-2" />
-                This week
-              </Button>
+              {!isCurrentWeek && (
+                <Button
+                  variant="pillmindGhost"
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => {
+                    // Return to current week and today
+                    setSelectedDate(new Date())
+                  }}
+                >
+                  <CalendarDays className="w-4 h-4 mr-2" />
+                  This week
+                </Button>
+              )}
             </div>
           </div>
 
