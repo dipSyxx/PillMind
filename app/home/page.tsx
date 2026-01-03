@@ -105,7 +105,9 @@ export default function HomePage() {
   const adherence = useMemo(() => {
     const denom = taken + missed + skipped + scheduled
     if (!denom) return 0 // No doses means 0% adherence, not 100%
-    return Math.round((taken / (taken + missed + skipped)) * 100)
+    const actionable = taken + missed + skipped
+    if (!actionable) return 0 // All doses are still scheduled, no adherence calculated yet
+    return Math.round((taken / actionable) * 100)
   }, [taken, missed, skipped, scheduled])
 
   // === Prescription/Medication mapping ===
