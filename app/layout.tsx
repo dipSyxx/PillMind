@@ -2,6 +2,7 @@ import EnsureSettings from '@/components/providers/ensure-settings'
 import { AuthProvider } from '@/components/providers/session-provider'
 import { OrganizationStructuredData, WebSiteStructuredData } from '@/components/seo/structured-data'
 import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from '@/components/ui/sonner'
 import { authOptions } from '@/lib/auth'
 import { defaultMetadata } from '@/lib/seo'
 import type { Metadata } from 'next'
@@ -35,6 +36,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <EnsureSettings />
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
             {children}
+            <Toaster />
           </ThemeProvider>
         </AuthProvider>
       </body>

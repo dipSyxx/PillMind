@@ -1,12 +1,24 @@
 'use client'
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
 import { weekdayLabelShort } from '@/lib/medication-utils'
 import { Inventory, Medication, Prescription, Schedule } from '@/types/medication'
 import { format, parseISO } from 'date-fns'
-import { AlertCircle, Calendar, Clock, Pill } from 'lucide-react'
+import { AlertCircle, Calendar, Clock, Pill, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 
 interface MedicationDetailsProps {
   medication: Medication & { inventory?: Inventory | null }
@@ -15,6 +27,7 @@ interface MedicationDetailsProps {
   open?: boolean
   onClose: () => void
   onEdit: () => void
+  onPrescriptionDeleted?: () => void
 }
 
 export function MedicationDetails({
@@ -24,13 +37,57 @@ export function MedicationDetails({
   open = true,
   onClose,
   onEdit,
+  onPrescriptionDeleted,
 }: MedicationDetailsProps) {
+  const [prescriptionToDelete, setPrescriptionToDelete] = useState<string | null>(null)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
   const activePrescriptions = prescriptions.filter((rx) => !rx.endDate || new Date(rx.endDate) > new Date())
 
   const strengthDisplay =
     medication.strengthValue && medication.strengthUnit
       ? `${medication.strengthValue} ${medication.strengthUnit}`
       : null
+
+  const handleDeletePrescription = (prescriptionId: string) => {
+    setPrescriptionToDelete(prescriptionId)
+    setIsDeleteOpen(true)
+  }
+
+  const confirmDeletePrescription = async () => {
+    if (!prescriptionToDelete) return
+
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/prescriptions/${prescriptionToDelete}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast.success('Prescription deleted successfully')
+        setIsDeleteOpen(false)
+        setPrescriptionToDelete(null)
+        // Refresh data
+        if (onPrescriptionDeleted) {
+          onPrescriptionDeleted()
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || 'Failed to delete prescription'
+        toast.error(errorMessage)
+        console.error('Failed to delete prescription:', errorMessage)
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
+      toast.error('Error deleting prescription', {
+        description: errorMessage,
+      })
+      console.error('Error deleting prescription:', error)
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   return (
     <Drawer open={open} onOpenChange={onClose} direction="bottom">
@@ -155,6 +212,14 @@ export function MedicationDetails({
                           )}
                         </div>
                       </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDeletePrescription(rx.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
 
                     {/* Schedules */}
@@ -208,6 +273,29 @@ export function MedicationDetails({
           </div>
         </div>
       </DrawerContent>
+
+      {/* Delete Prescription Confirmation Dialog */}
+      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Prescription?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this prescription and all associated schedules and dose logs. This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeletePrescription}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Drawer>
   )
 }

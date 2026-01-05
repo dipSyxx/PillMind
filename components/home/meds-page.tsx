@@ -15,6 +15,7 @@ import { Drawer, DrawerContent } from '@/components/ui/drawer'
 import { useUserActions, useUserData } from '@/hooks/useUserStore'
 import { DraftMedication, Inventory, Medication, Prescription } from '@/types/medication'
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { MedicationDetails } from './medication-details'
 import { MedicationList } from './medication-list'
 import { MedicationWizard } from './medication-wizard'
@@ -60,7 +61,7 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
   }
 
   const confirmDelete = async () => {
-    if (!medicationToDelete) return
+    if (!medicationToDelete || isDeleting) return
 
     setIsDeleting(true)
     try {
@@ -74,10 +75,46 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
         setMedicationToDelete(null)
         // Refresh data
         await initialize()
+        toast.success('Medication deleted successfully', {
+          id: 'delete-medication-success',
+        })
       } else {
-        console.error('Failed to delete medication')
+        // Parse error response
+        let errorMessage = 'Failed to delete medication'
+        const contentType = response.headers.get('content-type')
+
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+          } catch (parseError) {
+            console.error('Failed to parse JSON error response:', parseError)
+          }
+        } else {
+          try {
+            const text = await response.text()
+            errorMessage = text || errorMessage
+          } catch (textError) {
+            console.error('Failed to parse text error response:', textError)
+          }
+        }
+
+        // Show toast notification with unique ID to prevent duplicates
+        toast.error(errorMessage, {
+          id: 'delete-medication-error',
+          description: errorMessage.includes('active prescriptions')
+            ? 'Please delete all associated prescriptions first before deleting this medication.'
+            : 'Please try again or contact support if the problem persists.',
+        })
+
+        console.error('Failed to delete medication:', errorMessage)
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
+      toast.error('Error deleting medication', {
+        id: 'delete-medication-error',
+        description: errorMessage,
+      })
       console.error('Error deleting medication:', error)
     } finally {
       setIsDeleting(false)
@@ -359,6 +396,10 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
           onEdit={() => {
             setIsDetailsOpen(false)
             handleEdit(medicationForDetails)
+          }}
+          onPrescriptionDeleted={async () => {
+            // Refresh data after prescription deletion
+            await initialize()
           }}
         />
       )}
