@@ -17,7 +17,7 @@ import { weekdayLabelShort } from '@/lib/medication-utils'
 import { Inventory, Medication, Prescription, Schedule } from '@/types/medication'
 import { format, parseISO } from 'date-fns'
 import { AlertCircle, Calendar, Clock, Pill, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 
 interface MedicationDetailsProps {
@@ -42,6 +42,7 @@ export function MedicationDetails({
   const [prescriptionToDelete, setPrescriptionToDelete] = useState<string | null>(null)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const isDeletingRef = useRef(false)
 
   const activePrescriptions = prescriptions.filter((rx) => !rx.endDate || new Date(rx.endDate) > new Date())
 
@@ -56,8 +57,10 @@ export function MedicationDetails({
   }
 
   const confirmDeletePrescription = async () => {
-    if (!prescriptionToDelete) return
+    if (!prescriptionToDelete || isDeletingRef.current) return
 
+    // Set ref immediately to prevent duplicate calls
+    isDeletingRef.current = true
     setIsDeleting(true)
     try {
       const response = await fetch(`/api/prescriptions/${prescriptionToDelete}`, {
@@ -65,7 +68,9 @@ export function MedicationDetails({
       })
 
       if (response.ok) {
-        toast.success('Prescription deleted successfully')
+        toast.success('Prescription deleted successfully', {
+          id: 'delete-prescription-success',
+        })
         setIsDeleteOpen(false)
         setPrescriptionToDelete(null)
         // Refresh data
@@ -73,20 +78,49 @@ export function MedicationDetails({
           onPrescriptionDeleted()
         }
       } else {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.error || 'Failed to delete prescription'
-        toast.error(errorMessage)
+        // Parse error response
+        let errorMessage = 'Failed to delete prescription'
+        const contentType = response.headers.get('content-type')
+
+        if (contentType && contentType.includes('application/json')) {
+          try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorMessage
+          } catch (parseError) {
+            console.error('Failed to parse JSON error response:', parseError)
+          }
+        } else {
+          try {
+            const text = await response.text()
+            errorMessage = text || errorMessage
+          } catch (textError) {
+            console.error('Failed to parse text error response:', textError)
+          }
+        }
+
+        // Show toast notification with unique ID to prevent duplicates
+        toast.error(errorMessage, {
+          id: 'delete-prescription-error',
+        })
         console.error('Failed to delete prescription:', errorMessage)
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
       toast.error('Error deleting prescription', {
+        id: 'delete-prescription-error',
         description: errorMessage,
       })
       console.error('Error deleting prescription:', error)
     } finally {
+      isDeletingRef.current = false
       setIsDeleting(false)
     }
+  }
+
+  const handleConfirmDelete = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    confirmDeletePrescription()
   }
 
   return (
@@ -287,7 +321,7 @@ export function MedicationDetails({
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDeletePrescription}
+              onClick={handleConfirmDelete}
               disabled={isDeleting}
               className="bg-red-600 hover:bg-red-700"
             >

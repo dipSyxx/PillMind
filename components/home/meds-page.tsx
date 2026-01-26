@@ -14,7 +14,7 @@ import {
 import { Drawer, DrawerContent } from '@/components/ui/drawer'
 import { useUserActions, useUserData } from '@/hooks/useUserStore'
 import { DraftMedication, Inventory, Medication, Prescription } from '@/types/medication'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { MedicationDetails } from './medication-details'
 import { MedicationList } from './medication-list'
@@ -37,6 +37,7 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [medicationToDelete, setMedicationToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const isDeletingRef = useRef(false)
 
   // Group prescriptions by medicationId
   const prescriptionsByMedId = useMemo(() => {
@@ -61,8 +62,10 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
   }
 
   const confirmDelete = async () => {
-    if (!medicationToDelete || isDeleting) return
+    if (!medicationToDelete || isDeletingRef.current) return
 
+    // Set ref immediately to prevent duplicate calls
+    isDeletingRef.current = true
     setIsDeleting(true)
     try {
       const response = await fetch(`/api/medications/${medicationToDelete}`, {
@@ -117,8 +120,15 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
       })
       console.error('Error deleting medication:', error)
     } finally {
+      isDeletingRef.current = false
       setIsDeleting(false)
     }
+  }
+
+  const handleConfirmDelete = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    confirmDelete()
   }
 
   const handleViewDetails = (medication: Medication) => {
@@ -437,7 +447,7 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
             <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={handleConfirmDelete} disabled={isDeleting} className="bg-red-600 hover:bg-red-700">
               {isDeleting ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
