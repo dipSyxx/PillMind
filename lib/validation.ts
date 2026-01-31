@@ -1,81 +1,93 @@
-import { z } from "zod"
+import { z } from 'zod'
 
 // Individual field schemas for real-time validation
 export const nameSchema = z
   .string()
-  .min(1, "Name is required")
-  .min(2, "Name must be at least 2 characters")
-  .max(50, "Name must be less than 50 characters")
-  .regex(/^[a-zA-Z\s'-]+$/, "Name can only contain letters, spaces, hyphens, and apostrophes")
+  .min(1, 'Name is required')
+  .min(2, 'Name must be at least 2 characters')
+  .max(50, 'Name must be less than 50 characters')
+  .regex(/^[a-zA-Z\s'-]+$/, 'Name can only contain letters, spaces, hyphens, and apostrophes')
 
 export const emailSchema = z
   .string()
-  .min(1, "Email is required")
-  .email("Please enter a valid email address")
-  .max(100, "Email must be less than 100 characters")
+  .min(1, 'Email is required')
+  .email('Please enter a valid email address')
+  .max(100, 'Email must be less than 100 characters')
   .toLowerCase()
 
 export const passwordSchema = z
   .string()
-  .min(1, "Password is required")
-  .min(8, "Password must be at least 8 characters")
-  .max(100, "Password must be less than 100 characters")
-  .regex(/^(?=.*[a-z])/, "Password must contain at least one lowercase letter")
-  .regex(/^(?=.*[A-Z])/, "Password must contain at least one uppercase letter")
-  .regex(/^(?=.*\d)/, "Password must contain at least one number")
-  .regex(/^(?=.*[@$!%*?&])/, "Password must contain at least one special character (@$!%*?&)")
+  .min(1, 'Password is required')
+  .min(8, 'Password must be at least 8 characters')
+  .max(100, 'Password must be less than 100 characters')
+  .regex(/^(?=.*[a-z])/, 'Password must contain at least one lowercase letter')
+  .regex(/^(?=.*[A-Z])/, 'Password must contain at least one uppercase letter')
+  .regex(/^(?=.*\d)/, 'Password must contain at least one number')
+  .regex(/^(?=.*[@$!%*?&_\-.#])/, 'Password must contain at least one special character (e.g. @ $ ! % * ? & _ - . #)')
 
-export const confirmPasswordSchema = z.string().min(1, "Please confirm your password")
+export const confirmPasswordSchema = z.string().min(1, 'Please confirm your password')
 
 // Complete registration schema with cross-field validation
-export const registerSchema = z.object({
-  name: nameSchema,
-  email: emailSchema,
-  password: passwordSchema,
-  confirmPassword: confirmPasswordSchema,
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-})
+export const registerSchema = z
+  .object({
+    name: nameSchema,
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: confirmPasswordSchema,
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  })
 
 export const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, "Email is required")
-    .email("Please enter a valid email address"),
-  password: z
-    .string()
-    .min(1, "Password is required")
-    .min(8, "Password must be at least 8 characters"),
+  email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
+  password: z.string().min(1, 'Password is required').min(8, 'Password must be at least 8 characters'),
 })
 
 // Individual field schemas for password change
 export const currentPasswordSchema = z
   .string()
-  .min(1, "Current password is required")
-  .min(8, "Current password must be at least 8 characters")
+  .min(1, 'Current password is required')
+  .min(8, 'Current password must be at least 8 characters')
 
 export const newPasswordSchema = z
   .string()
-  .min(1, "New password is required")
-  .min(8, "New password must be at least 8 characters")
-  .max(100, "New password must be less than 100 characters")
-  .regex(/^(?=.*[a-z])/, "New password must contain at least one lowercase letter")
-  .regex(/^(?=.*[A-Z])/, "New password must contain at least one uppercase letter")
-  .regex(/^(?=.*\d)/, "New password must contain at least one number")
-  .regex(/^(?=.*[@$!%*?&])/, "New password must contain at least one special character (@$!%*?&)")
+  .min(1, 'New password is required')
+  .min(8, 'New password must be at least 8 characters')
+  .max(100, 'New password must be less than 100 characters')
+  .regex(/^(?=.*[a-z])/, 'New password must contain at least one lowercase letter')
+  .regex(/^(?=.*[A-Z])/, 'New password must contain at least one uppercase letter')
+  .regex(/^(?=.*\d)/, 'New password must contain at least one number')
+  .regex(
+    /^(?=.*[@$!%*?&_\-.#])/,
+    'New password must contain at least one special character (e.g. @ $ ! % * ? & _ - . #)',
+  )
 
-export const confirmNewPasswordSchema = z.string().min(1, "Please confirm your new password")
+export const confirmNewPasswordSchema = z.string().min(1, 'Please confirm your new password')
 
 // Complete password change schema with cross-field validation
-export const changePasswordSchema = z.object({
-  currentPassword: currentPasswordSchema,
-  newPassword: newPasswordSchema,
-  confirmNewPassword: confirmNewPasswordSchema,
-}).refine((data) => data.newPassword === data.confirmNewPassword, {
-  message: "New passwords don't match",
-  path: ["confirmNewPassword"],
-})
+export const changePasswordSchema = z
+  .object({
+    currentPassword: currentPasswordSchema,
+    newPassword: newPasswordSchema,
+    confirmNewPassword: confirmNewPasswordSchema,
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "New passwords don't match",
+    path: ['confirmNewPassword'],
+  })
+
+// Set password (for OAuth users who have no password yet)
+export const setPasswordSchema = z
+  .object({
+    newPassword: newPasswordSchema,
+    confirmNewPassword: confirmNewPasswordSchema,
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "New passwords don't match",
+    path: ['confirmNewPassword'],
+  })
 
 // Password strength calculation
 export function calculatePasswordStrength(password: string): {
@@ -89,13 +101,13 @@ export function calculatePasswordStrength(password: string): {
     lowercase: /[a-z]/.test(password),
     uppercase: /[A-Z]/.test(password),
     number: /\d/.test(password),
-    special: /[@$!%*?&]/.test(password),
+    special: /[@$!%*?&_\-.#]/.test(password),
   }
 
   score = Object.values(checks).filter(Boolean).length
 
-  if (score <= 2) return { score, label: "Weak", color: "text-red-500" }
-  if (score <= 3) return { score, label: "Fair", color: "text-orange-500" }
-  if (score <= 4) return { score, label: "Good", color: "text-yellow-500" }
-  return { score, label: "Strong", color: "text-green-500" }
+  if (score <= 2) return { score, label: 'Weak', color: 'text-red-500' }
+  if (score <= 3) return { score, label: 'Fair', color: 'text-orange-500' }
+  if (score <= 4) return { score, label: 'Good', color: 'text-yellow-500' }
+  return { score, label: 'Strong', color: 'text-green-500' }
 }

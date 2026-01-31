@@ -1,11 +1,11 @@
-import NextAuth, { type NextAuthOptions } from 'next-auth'
-import { PrismaAdapter } from '@auth/prisma-adapter'
-import Credentials from 'next-auth/providers/credentials'
-import Google from 'next-auth/providers/google'
-import GitHub from 'next-auth/providers/github'
-import { z } from 'zod'
-import bcrypt from 'bcryptjs'
 import prisma from '@/prisma/prisma-client'
+import { PrismaAdapter } from '@auth/prisma-adapter'
+import bcrypt from 'bcryptjs'
+import NextAuth, { type NextAuthOptions } from 'next-auth'
+import Credentials from 'next-auth/providers/credentials'
+import GitHub from 'next-auth/providers/github'
+import Google from 'next-auth/providers/google'
+import { z } from 'zod'
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma), // Prisma Adapter
@@ -60,6 +60,16 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub
       }
       return session
+    },
+  },
+  events: {
+    async linkAccount({ user, account }) {
+      if (user?.id && (account?.provider === 'google' || account?.provider === 'github')) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { emailVerified: new Date() },
+        })
+      }
     },
   },
 }

@@ -14,6 +14,7 @@ import {
   confirmNewPasswordSchema,
   currentPasswordSchema,
   newPasswordSchema,
+  setPasswordSchema,
 } from '@/lib/validation'
 import { format, parseISO } from 'date-fns'
 import { motion } from 'framer-motion'
@@ -320,8 +321,9 @@ export default function ProfilePage() {
       }
       schemaMap[field].parse(value)
       return ''
-    } catch (e: any) {
-      return e?.errors?.[0]?.message || 'Invalid input'
+    } catch (e: unknown) {
+      const zErr = e as { issues?: Array<{ message?: string }> }
+      return zErr?.issues?.[0]?.message ?? 'Invalid input'
     }
   }
 
@@ -333,6 +335,51 @@ export default function ProfilePage() {
   const onPwdBlur = (field: keyof typeof passwordData) => {
     const msg = validateField(field, passwordData[field])
     setPasswordErrors((er) => ({ ...er, [field]: msg }))
+  }
+
+  const handleSetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+    setLoading(true)
+    try {
+      const validatedData = setPasswordSchema.parse({
+        newPassword: passwordData.newPassword,
+        confirmNewPassword: passwordData.confirmNewPassword,
+      })
+      const res = await fetch('/api/profile/set-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          newPassword: validatedData.newPassword,
+          confirmNewPassword: validatedData.confirmNewPassword,
+        }),
+      })
+      if (res.ok) {
+        setSuccess('Password set successfully! You can now sign in with email and password.')
+        setPasswordData((p) => ({ ...p, newPassword: '', confirmNewPassword: '' }))
+        setPasswordErrors({})
+        void fetchUser()
+        void fetchAccountInfo()
+      } else {
+        const errorData = await res.json()
+        setError(errorData.error || 'Failed to set password')
+      }
+    } catch (err: unknown) {
+      const zErr = err as { issues?: Array<{ path?: (string | number)[]; message?: string }> }
+      if (zErr?.issues?.length) {
+        const errors: Record<string, string> = {}
+        zErr.issues.forEach((e) => {
+          if (e.path?.[0]) errors[String(e.path[0])] = e.message ?? 'Invalid'
+        })
+        setPasswordErrors(errors)
+        setError('Please fix the errors below and try again.')
+      } else {
+        setError('An unexpected error occurred. Please try again.')
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const saveSettings = async (e: React.FormEvent) => {
@@ -840,95 +887,197 @@ export default function ProfilePage() {
 
                   <div className="max-w-full">
                     <div className="space-y-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-[#0EA8BC]/10 rounded-[8px] flex items-center justify-center">
-                          <Key className="w-4 h-4 text-[#0EA8BC]" />
-                        </div>
-                        <h3 className="text-lg font-semibold text-[#0F172A]">Change Password</h3>
-                      </div>
+                      {accountInfo && accountInfo.hasPassword ? (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-[#0EA8BC]/10 rounded-[8px] flex items-center justify-center">
+                              <Key className="w-4 h-4 text-[#0EA8BC]" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-[#0F172A]">Change Password</h3>
+                          </div>
 
-                      <form onSubmit={handlePasswordChange} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <Input
-                            label="Current Password"
-                            type={showPasswords.current ? 'text' : 'password'}
-                            placeholder="Enter current password"
-                            value={passwordData.currentPassword}
-                            onChange={(e) => onPwdChange('currentPassword', e.target.value)}
-                            onBlur={() => onPwdBlur('currentPassword')}
-                            error={passwordErrors.currentPassword}
-                            leftIcon={<Key className="w-4 h-4" />}
-                            rightIcon={
-                              <button
-                                type="button"
-                                onClick={() => setShowPasswords((p) => ({ ...p, current: !p.current }))}
-                                className="text-[#64748B] hover:text-[#0F172A] transition-colors"
-                              >
-                                {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                              </button>
-                            }
-                          />
+                          <p className="text-sm font-medium text-[#0F172A]">Password must contain:</p>
+                          <ul className="text-sm text-[#64748B] list-disc list-inside space-y-1">
+                            <li>At least 8 characters</li>
+                            <li>One lowercase letter</li>
+                            <li>One uppercase letter</li>
+                            <li>One number</li>
+                            <li>One special character (e.g. @ $ ! % * ? &amp; _ - . #)</li>
+                          </ul>
 
-                          <div className="space-y-2">
+                          <form onSubmit={handlePasswordChange} className="space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                              <Input
+                                label="Current Password"
+                                type={showPasswords.current ? 'text' : 'password'}
+                                placeholder="Enter current password"
+                                value={passwordData.currentPassword}
+                                onChange={(e) => onPwdChange('currentPassword', e.target.value)}
+                                onBlur={() => onPwdBlur('currentPassword')}
+                                error={passwordErrors.currentPassword}
+                                leftIcon={<Key className="w-4 h-4" />}
+                                rightIcon={
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowPasswords((p) => ({ ...p, current: !p.current }))}
+                                    className="text-[#64748B] hover:text-[#0F172A] transition-colors"
+                                  >
+                                    {showPasswords.current ? (
+                                      <EyeOff className="w-4 h-4" />
+                                    ) : (
+                                      <Eye className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                }
+                              />
+
+                              <div className="space-y-2">
+                                <Input
+                                  label="New Password"
+                                  type={showPasswords.new ? 'text' : 'password'}
+                                  placeholder="Enter new password"
+                                  value={passwordData.newPassword}
+                                  onChange={(e) => onPwdChange('newPassword', e.target.value)}
+                                  onBlur={() => onPwdBlur('newPassword')}
+                                  error={passwordErrors.newPassword}
+                                  leftIcon={<Key className="w-4 h-4" />}
+                                  rightIcon={
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowPasswords((p) => ({ ...p, new: !p.new }))}
+                                      className="text-[#64748B] hover:text-[#0F172A] transition-colors"
+                                    >
+                                      {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                  }
+                                />
+                                {passwordData.newPassword && <PasswordStrength password={passwordData.newPassword} />}
+                              </div>
+                            </div>
+
                             <Input
-                              label="New Password"
-                              type={showPasswords.new ? 'text' : 'password'}
-                              placeholder="Enter new password"
-                              value={passwordData.newPassword}
-                              onChange={(e) => onPwdChange('newPassword', e.target.value)}
-                              onBlur={() => onPwdBlur('newPassword')}
-                              error={passwordErrors.newPassword}
+                              label="Confirm New Password"
+                              type={showPasswords.confirm ? 'text' : 'password'}
+                              placeholder="Confirm new password"
+                              value={passwordData.confirmNewPassword}
+                              onChange={(e) => onPwdChange('confirmNewPassword', e.target.value)}
+                              onBlur={() => onPwdBlur('confirmNewPassword')}
+                              error={passwordErrors.confirmNewPassword}
                               leftIcon={<Key className="w-4 h-4" />}
                               rightIcon={
                                 <button
                                   type="button"
-                                  onClick={() => setShowPasswords((p) => ({ ...p, new: !p.new }))}
+                                  onClick={() => setShowPasswords((p) => ({ ...p, confirm: !p.confirm }))}
                                   className="text-[#64748B] hover:text-[#0F172A] transition-colors"
                                 >
-                                  {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                               }
                             />
-                            {passwordData.newPassword && <PasswordStrength password={passwordData.newPassword} />}
+
+                            <div className="flex justify-end">
+                              <Button type="submit" variant="pillmind" size="lg" disabled={loading}>
+                                {loading ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Changing password...
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Save className="w-4 h-4" />
+                                    Change Password
+                                  </div>
+                                )}
+                              </Button>
+                            </div>
+                          </form>
+                        </>
+                      ) : accountInfo && !accountInfo.hasPassword ? (
+                        <>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-[#0EA8BC]/10 rounded-[8px] flex items-center justify-center">
+                              <Key className="w-4 h-4 text-[#0EA8BC]" />
+                            </div>
+                            <h3 className="text-lg font-semibold text-[#0F172A]">Set a password</h3>
                           </div>
-                        </div>
+                          <p className="text-sm text-[#64748B]">
+                            Add a password to sign in with your email as well. This gives you a backup if a provider is
+                            unavailable.
+                          </p>
 
-                        <Input
-                          label="Confirm New Password"
-                          type={showPasswords.confirm ? 'text' : 'password'}
-                          placeholder="Confirm new password"
-                          value={passwordData.confirmNewPassword}
-                          onChange={(e) => onPwdChange('confirmNewPassword', e.target.value)}
-                          onBlur={() => onPwdBlur('confirmNewPassword')}
-                          error={passwordErrors.confirmNewPassword}
-                          leftIcon={<Key className="w-4 h-4" />}
-                          rightIcon={
-                            <button
-                              type="button"
-                              onClick={() => setShowPasswords((p) => ({ ...p, confirm: !p.confirm }))}
-                              className="text-[#64748B] hover:text-[#0F172A] transition-colors"
-                            >
-                              {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                          }
-                        />
+                          <p className="text-sm font-medium text-[#0F172A]">Password must contain:</p>
+                          <ul className="text-sm text-[#64748B] list-disc list-inside space-y-1">
+                            <li>At least 8 characters</li>
+                            <li>One lowercase letter</li>
+                            <li>One uppercase letter</li>
+                            <li>One number</li>
+                            <li>One special character (e.g. @ $ ! % * ? &amp; _ - . #)</li>
+                          </ul>
 
-                        <div className="flex justify-end">
-                          <Button type="submit" variant="pillmind" size="lg" disabled={loading}>
-                            {loading ? (
-                              <div className="flex items-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Changing password...
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2">
-                                <Save className="w-4 h-4" />
-                                Change Password
-                              </div>
-                            )}
-                          </Button>
-                        </div>
-                      </form>
+                          <form onSubmit={handleSetPassword} className="space-y-6">
+                            <div className="space-y-2">
+                              <Input
+                                label="New Password"
+                                type={showPasswords.new ? 'text' : 'password'}
+                                placeholder="Enter new password"
+                                value={passwordData.newPassword}
+                                onChange={(e) => onPwdChange('newPassword', e.target.value)}
+                                onBlur={() => onPwdBlur('newPassword')}
+                                error={passwordErrors.newPassword}
+                                leftIcon={<Key className="w-4 h-4" />}
+                                rightIcon={
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowPasswords((p) => ({ ...p, new: !p.new }))}
+                                    className="text-[#64748B] hover:text-[#0F172A] transition-colors"
+                                  >
+                                    {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                  </button>
+                                }
+                              />
+                              {passwordData.newPassword && <PasswordStrength password={passwordData.newPassword} />}
+                            </div>
+
+                            <Input
+                              label="Confirm New Password"
+                              type={showPasswords.confirm ? 'text' : 'password'}
+                              placeholder="Confirm new password"
+                              value={passwordData.confirmNewPassword}
+                              onChange={(e) => onPwdChange('confirmNewPassword', e.target.value)}
+                              onBlur={() => onPwdBlur('confirmNewPassword')}
+                              error={passwordErrors.confirmNewPassword}
+                              leftIcon={<Key className="w-4 h-4" />}
+                              rightIcon={
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPasswords((p) => ({ ...p, confirm: !p.confirm }))}
+                                  className="text-[#64748B] hover:text-[#0F172A] transition-colors"
+                                >
+                                  {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              }
+                            />
+
+                            <div className="flex justify-end">
+                              <Button type="submit" variant="pillmind" size="lg" disabled={loading}>
+                                {loading ? (
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    Setting password...
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2">
+                                    <Save className="w-4 h-4" />
+                                    Set Password
+                                  </div>
+                                )}
+                              </Button>
+                            </div>
+                          </form>
+                        </>
+                      ) : (
+                        <p className="text-sm text-[#64748B]">Loading security options...</p>
+                      )}
                     </div>
                   </div>
                 </motion.div>
