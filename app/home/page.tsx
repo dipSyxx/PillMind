@@ -382,8 +382,12 @@ export default function HomePage() {
               <LowStockAlerts
                 lowStock={lowStock}
                 onRefill={async (medicationId, newQuantity) => {
+                  const med = userMeds.find((m) => m.id === medicationId)
+                  const inv = med?.inventory
                   await updateInventory(medicationId, {
                     currentQty: newQuantity,
+                    unit: inv?.unit ?? 'TAB',
+                    ...(inv?.lowThreshold != null && { lowThreshold: Number(inv.lowThreshold) }),
                     lastRestockedAt: new Date().toISOString(),
                   })
                 }}

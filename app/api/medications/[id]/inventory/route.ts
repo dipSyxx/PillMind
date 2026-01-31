@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/prisma/prisma-client'
-import { getUserIdFromSession } from '@/lib/session'
-import { z } from 'zod'
 import { nowInTz } from '@/lib/medication-utils'
+import { getUserIdFromSession } from '@/lib/session'
+import prisma from '@/prisma/prisma-client'
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 
 const inventorySchema = z.object({
   currentQty: z.number().min(0),
@@ -11,19 +11,17 @@ const inventorySchema = z.object({
   lastRestockedAt: z.string().datetime().optional(),
 })
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getUserIdFromSession()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
+    const { id } = await params
     // Check if medication exists and belongs to user
     const medication = await prisma.medication.findFirst({
-      where: { id: params.id, userId },
+      where: { id, userId },
       include: {
         inventory: true,
       },
@@ -40,22 +38,20 @@ export async function GET(
   }
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getUserIdFromSession()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
+    const { id } = await params
     const body = await request.json()
     const validatedData = inventorySchema.parse(body)
 
     // Check if medication exists and belongs to user
     const medication = await prisma.medication.findFirst({
-      where: { id: params.id, userId },
+      where: { id, userId },
     })
 
     if (!medication) {
@@ -64,7 +60,7 @@ export async function POST(
 
     // Check if inventory already exists
     const existingInventory = await prisma.inventory.findUnique({
-      where: { medicationId: params.id },
+      where: { medicationId: id },
     })
 
     if (existingInventory) {
@@ -73,7 +69,7 @@ export async function POST(
 
     const inventory = await prisma.inventory.create({
       data: {
-        medicationId: params.id,
+        medicationId: id,
         currentQty: validatedData.currentQty,
         unit: validatedData.unit,
         lowThreshold: validatedData.lowThreshold,
@@ -91,29 +87,27 @@ export async function POST(
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getUserIdFromSession()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
+    const { id } = await params
     const body = await request.json()
     const validatedData = inventorySchema.parse(body)
 
     // Check if medication exists and belongs to user
     const medication = await prisma.medication.findFirst({
-      where: { id: params.id, userId },
+      where: { id, userId },
       include: {
         user: {
           include: {
-            settings: true
-          }
-        }
-      }
+            settings: true,
+          },
+        },
+      },
     })
 
     if (!medication) {
@@ -126,15 +120,19 @@ export async function PUT(
 
     // Check if inventory exists to determine if this is a restock
     const existingInventory = await prisma.inventory.findUnique({
-      where: { medicationId: params.id },
+      where: { medicationId: id },
     })
 
     // Calculate if this is a restock (quantity increased)
     const isRestock = existingInventory && validatedData.currentQty > Number(existingInventory.currentQty)
-    const lastRestockedAt = isRestock ? nowInUserTz : (validatedData.lastRestockedAt ? new Date(validatedData.lastRestockedAt) : existingInventory?.lastRestockedAt)
+    const lastRestockedAt = isRestock
+      ? nowInUserTz
+      : validatedData.lastRestockedAt
+        ? new Date(validatedData.lastRestockedAt)
+        : existingInventory?.lastRestockedAt
 
     const inventory = await prisma.inventory.upsert({
-      where: { medicationId: params.id },
+      where: { medicationId: id },
       update: {
         currentQty: validatedData.currentQty,
         unit: validatedData.unit,
@@ -142,7 +140,7 @@ export async function PUT(
         lastRestockedAt,
       },
       create: {
-        medicationId: params.id,
+        medicationId: id,
         currentQty: validatedData.currentQty,
         unit: validatedData.unit,
         lowThreshold: validatedData.lowThreshold,
