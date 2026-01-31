@@ -1,16 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/prisma/prisma-client'
 import { getUserIdFromSession } from '@/lib/session'
+import prisma from '@/prisma/prisma-client'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getUserIdFromSession()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const { id } = await params
   const body = await request.json()
   const { status, takenAt, scheduledFor, quantity, unit } = body
 
@@ -46,7 +44,7 @@ export async function PATCH(
 
   // Verify that the dose log belongs to the user
   const doseLog = await prisma.doseLog.findFirst({
-    where: { id: params.id },
+    where: { id },
     include: {
       prescription: {
         select: { userId: true },
@@ -63,7 +61,7 @@ export async function PATCH(
   }
 
   const updatedDoseLog = await prisma.doseLog.update({
-    where: { id: params.id },
+    where: { id },
     data: updateData,
     include: {
       prescription: {

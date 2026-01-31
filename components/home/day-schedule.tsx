@@ -1,12 +1,10 @@
 'use client'
 
-import React from 'react'
-import { Pill, Check, AlarmClock, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { formatHumanDate, toLocalHM } from '@/lib/medication-utils'
 import { DoseLog, DoseStatus, TimeFormat } from '@/types/medication'
-import { toLocalHM, formatHumanDate } from '@/lib/medication-utils'
-import { format } from 'date-fns'
+import { AlarmClock, Check, Clock, Pill, X } from 'lucide-react'
 
 interface DayScheduleProps {
   dayLogs: DoseLog[]
@@ -74,8 +72,14 @@ export function DaySchedule({
                         (dl as any).prescription?.instructions ??
                         (`${dl.quantity ?? ''} ${dl.unit ?? ''}`.trim() || 'No instructions available')}
                     </div>
-                    <div className="mt-1">
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
                       <StatusBadge status={uiStatus} />
+                      {uiStatus === 'TAKEN' && dl.takenAt && (
+                        <span className="inline-flex items-center gap-1 text-xs text-[#64748B]">
+                          <Clock className="w-3 h-3" />
+                          Taken: {toLocalHM(dl.takenAt, timeFormat)}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
