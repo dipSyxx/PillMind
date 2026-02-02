@@ -2,9 +2,16 @@
 
 import { LoadingSpinner } from '@/components/shared/loading-spinner'
 import { Button } from '@/components/ui/button'
-import { useUserActions, useUserData } from '@/hooks/useUserStore'
-import { TimeFormat } from '@/types/medication'
-import { endOfDay, endOfMonth, endOfWeek, parseISO, startOfDay, startOfMonth, startOfWeek } from 'date-fns'
+import { useUserData } from '@/hooks/useUserStore'
+import {
+  endOfDayInTz,
+  endOfMonthInTz,
+  endOfWeekInTz,
+  startOfDayInTz,
+  startOfMonthInTz,
+  startOfWeekInTz,
+} from '@/lib/medication-utils'
+import { DoseLog, TimeFormat } from '@/types/medication'
 import { Download } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { LogsFilters, type DateFilter } from './logs-filters'
@@ -17,9 +24,10 @@ interface LogsPageProps {
 }
 
 export function LogsPage({ timezone, timeFormat }: LogsPageProps) {
-  const { medications, doseLogs, isLoading } = useUserData()
-  const { setDoseLogs } = useUserActions()
+  const { medications, isLoading } = useUserData()
 
+  const [logsDoseLogs, setLogsDoseLogs] = useState<DoseLog[] | null>(null)
+  const [logsLoading, setLogsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
   const [customDateRange, setCustomDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
@@ -30,49 +38,121 @@ export function LogsPage({ timezone, timeFormat }: LogsPageProps) {
   const [medicationFilter, setMedicationFilter] = useState<string | 'all'>('all')
   const [isExporting, setIsExporting] = useState(false)
 
-  // Get date range based on filter
+  // Date range in user timezone (for UI and export)
   const dateRange = useMemo(() => {
     const now = new Date()
     switch (dateFilter) {
       case 'today':
-        return { from: startOfDay(now), to: endOfDay(now) }
+        return { from: startOfDayInTz(now, timezone), to: endOfDayInTz(now, timezone) }
       case 'week':
-        return { from: startOfWeek(now), to: endOfWeek(now) }
+        return { from: startOfWeekInTz(now, timezone), to: endOfWeekInTz(now, timezone) }
       case 'month':
-        return { from: startOfMonth(now), to: endOfMonth(now) }
+        return { from: startOfMonthInTz(now, timezone), to: endOfMonthInTz(now, timezone) }
       case 'custom':
         return customDateRange
       default:
         return undefined
     }
-  }, [dateFilter, customDateRange])
+  }, [dateFilter, customDateRange, timezone])
 
-  // Filter dose logs
-  const filteredLogs = useMemo(() => {
-    let filtered = doseLogs || []
+  // Fetch dose logs when date filter or timezone changes
+  useEffect(() => {
+    let cancelled = false
+    setLogsLoading(true)
 
-    // Filter by date range
-    if (dateRange?.from && dateRange?.to) {
-      filtered = filtered.filter((log) => {
-        const logDate = parseISO(log.scheduledFor)
-        return logDate >= dateRange.from! && logDate <= dateRange.to!
-      })
+    const now = new Date()
+    let from: Date | undefined
+    let to: Date | undefined
+
+    if (dateFilter === 'all') {
+      // no from/to
+    } else if (dateFilter === 'custom') {
+      from = customDateRange.from
+      to = customDateRange.to
+    } else if (dateFilter === 'today') {
+      from = startOfDayInTz(now, timezone)
+      to = endOfDayInTz(now, timezone)
+    } else if (dateFilter === 'week') {
+      from = startOfWeekInTz(now, timezone)
+      to = endOfWeekInTz(now, timezone)
+    } else if (dateFilter === 'month') {
+      from = startOfMonthInTz(now, timezone)
+      to = endOfMonthInTz(now, timezone)
     }
 
-    // Filter by status
+    if (dateFilter === 'all') {
+      fetch('/api/dose')
+        .then((res) => res.json())
+        .then((logs: DoseLog[]) => {
+          if (!cancelled) setLogsDoseLogs(logs)
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            console.error('Failed to load dose logs:', err)
+            setLogsDoseLogs([])
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setLogsLoading(false)
+        })
+    } else if (dateFilter === 'custom') {
+      if (from && to) {
+        const params = new URLSearchParams({ from: from.toISOString(), to: to.toISOString() })
+        fetch(`/api/dose?${params.toString()}`)
+          .then((res) => res.json())
+          .then((logs: DoseLog[]) => {
+            if (!cancelled) setLogsDoseLogs(logs)
+          })
+          .catch((err) => {
+            if (!cancelled) {
+              console.error('Failed to load dose logs:', err)
+              setLogsDoseLogs([])
+            }
+          })
+          .finally(() => {
+            if (!cancelled) setLogsLoading(false)
+          })
+      } else {
+        setLogsDoseLogs([])
+        setLogsLoading(false)
+      }
+    } else if (from && to) {
+      const params = new URLSearchParams({ from: from.toISOString(), to: to.toISOString() })
+      fetch(`/api/dose?${params.toString()}`)
+        .then((res) => res.json())
+        .then((logs: DoseLog[]) => {
+          if (!cancelled) setLogsDoseLogs(logs)
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            console.error('Failed to load dose logs:', err)
+            setLogsDoseLogs([])
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setLogsLoading(false)
+        })
+    } else {
+      setLogsDoseLogs([])
+      setLogsLoading(false)
+    }
+
+    return () => {
+      cancelled = true
+    }
+  }, [dateFilter, customDateRange.from, customDateRange.to, timezone])
+
+  // Filter by status, medication, search only (date already applied by fetch)
+  const filteredLogs = useMemo(() => {
+    const source = logsDoseLogs ?? []
+    let filtered = source
+
     if (statusFilter !== 'all') {
       filtered = filtered.filter((log) => log.status === statusFilter)
     }
-
-    // Filter by medication
     if (medicationFilter !== 'all') {
-      filtered = filtered.filter((log) => {
-        const medicationId = log.prescription?.medicationId
-        return medicationId === medicationFilter
-      })
+      filtered = filtered.filter((log) => log.prescription?.medicationId === medicationFilter)
     }
-
-    // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       filtered = filtered.filter((log) => {
@@ -83,9 +163,8 @@ export function LogsPage({ timezone, timeFormat }: LogsPageProps) {
         return medicationName.toLowerCase().includes(query)
       })
     }
-
     return filtered
-  }, [doseLogs, dateRange, statusFilter, medicationFilter, searchQuery, medications])
+  }, [logsDoseLogs, statusFilter, medicationFilter, searchQuery, medications])
 
   // Get medication name helper
   const getMedicationName = (medicationId: string): string => {
@@ -124,20 +203,7 @@ export function LogsPage({ timezone, timeFormat }: LogsPageProps) {
     }
   }
 
-  // Load dose logs on mount if not already loaded
-  useEffect(() => {
-    if (!doseLogs || doseLogs.length === 0) {
-      // Load all dose logs if none are loaded
-      fetch('/api/dose')
-        .then((res) => res.json())
-        .then((logs) => {
-          setDoseLogs(logs)
-        })
-        .catch((err) => console.error('Failed to load dose logs:', err))
-    }
-  }, [doseLogs, setDoseLogs]) // Only run when doseLogs is empty
-
-  if (isLoading) {
+  if (isLoading || logsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoadingSpinner size="lg" />

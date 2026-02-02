@@ -3,7 +3,9 @@ import {
   addDays,
   addMinutes,
   addDays as dateFnsAddDays,
+  endOfMonth as dateFnsEndOfMonth,
   startOfDay as dateFnsStartOfDay,
+  startOfMonth as dateFnsStartOfMonth,
   startOfWeek as dateFnsStartOfWeek,
   format,
   getDay,
@@ -49,6 +51,50 @@ export function addDaysInTz(date: Date, days: number, tz: string): Date {
   const zonedDate = toZonedTime(date, tz)
   const newZonedDate = dateFnsAddDays(zonedDate, days)
   return fromZonedTime(newZonedDate, tz)
+}
+
+/**
+ * End of day in specific timezone (last ms of the day in tz, as UTC Date)
+ */
+export function endOfDayInTz(date: Date, tz: string): Date {
+  const start = startOfDayInTz(date, tz)
+  const nextDayStart = addDaysInTz(start, 1, tz)
+  return new Date(nextDayStart.getTime() - 1)
+}
+
+/**
+ * Start of week (Monday) in specific timezone, as UTC Date
+ */
+export function startOfWeekInTz(date: Date, tz: string): Date {
+  const zonedDate = toZonedTime(date, tz)
+  const weekStartZoned = dateFnsStartOfWeek(zonedDate, { weekStartsOn: 1 })
+  return fromZonedTime(weekStartZoned, tz)
+}
+
+/**
+ * End of week (Sunday) in specific timezone, as UTC Date
+ */
+export function endOfWeekInTz(date: Date, tz: string): Date {
+  const nextMondayStart = startOfWeekInTz(addDaysInTz(date, 7, tz), tz)
+  return new Date(nextMondayStart.getTime() - 1)
+}
+
+/**
+ * Start of month in specific timezone, as UTC Date
+ */
+export function startOfMonthInTz(date: Date, tz: string): Date {
+  const zonedDate = toZonedTime(date, tz)
+  const monthStartZoned = dateFnsStartOfMonth(zonedDate)
+  return fromZonedTime(monthStartZoned, tz)
+}
+
+/**
+ * End of month in specific timezone, as UTC Date
+ */
+export function endOfMonthInTz(date: Date, tz: string): Date {
+  const zonedDate = toZonedTime(date, tz)
+  const monthEndZoned = dateFnsEndOfMonth(zonedDate)
+  return fromZonedTime(monthEndZoned, tz)
 }
 
 /**
