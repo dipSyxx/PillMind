@@ -130,7 +130,7 @@ Scheduled tasks live under `app/api/cron/`. They support two auth modes:
    Set `CRON_SECRET` in Vercel Environment Variables. Vercel sends `Authorization: Bearer <CRON_SECRET>` on each cron request. The routes accept **GET** (used by Vercel) and **POST** (for manual tests). Schedules are in `vercel.json`:
    - `mark-missed` — daily 00:05 UTC  
    - `generate-doses` — daily 00:10 UTC  
-   - `send-notifications` — every minute  
+   - `send-notifications` — daily 08:00 UTC (Hobby-compatible; use `* * * * *` on Pro for per-minute)  
    - `low-stock-alerts` — daily 09:00 UTC  
 
 2. **Manual / local**  
