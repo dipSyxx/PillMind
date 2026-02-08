@@ -136,6 +136,10 @@ Scheduled tasks live under `app/api/cron/`. They support two auth modes:
 2. **Manual / local**  
    Call the endpoint while logged in (session cookie) or with `Authorization: Bearer <CRON_SECRET>` in the request. Use POST for a body (e.g. `generate-doses` with `{ "horizonDays": 14 }`).
 
+**Vercel plan limits (Cron):**
+- **Hobby**: Cron jobs may run **only once per day**. The expression `* * * * *` (every minute) for `send-notifications` will **fail deployment** with: *Hobby accounts are limited to daily cron jobs*. Daily jobs (e.g. `0 9 * * *`) can trigger anywhere within that hour (e.g. 09:00–09:59). To deploy on Hobby, either remove `send-notifications` from `vercel.json` or change its schedule to once daily (e.g. `0 8 * * *`).
+- **Pro / Enterprise**: Up to 100 cron jobs per project, minimum interval once per minute, per-minute scheduling precision.
+
 ## Getting started
 1. **Install dependencies** (Node.js 18+, pnpm recommended):
    ```bash
