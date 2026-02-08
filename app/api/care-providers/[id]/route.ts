@@ -97,7 +97,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
     }
 
     // Check if care provider has active prescriptions
-    if (existingCareProvider.prescriptions.length > 0) {
+    // A prescription is considered active if it has no endDate or endDate is in the future
+    const now = new Date()
+    const activePrescriptions = existingCareProvider.prescriptions.filter(
+      (rx) => !rx.endDate || new Date(rx.endDate) > now,
+    )
+    
+    if (activePrescriptions.length > 0) {
       return NextResponse.json(
         {
           error: 'Cannot delete care provider with active prescriptions',
