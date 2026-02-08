@@ -80,13 +80,13 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         medicationId: validatedData.medicationId,
-        providerId: validatedData.providerId,
+        providerId: validatedData.providerId && validatedData.providerId.trim() !== '' ? validatedData.providerId : null,
         indication: validatedData.indication,
         asNeeded: validatedData.asNeeded,
         maxDailyDose: validatedData.maxDailyDose,
         instructions: validatedData.instructions,
         startDate: new Date(validatedData.startDate),
-        endDate: validatedData.endDate ? new Date(validatedData.endDate) : null,
+        endDate: validatedData.endDate && validatedData.endDate.trim() !== '' ? new Date(validatedData.endDate) : null,
       },
       include: {
         medication: {

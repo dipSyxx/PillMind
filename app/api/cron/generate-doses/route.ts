@@ -4,10 +4,8 @@ import { getUserIdFromSession } from '@/lib/session'
 import {
   nowInTz,
   addDaysInTz,
-  startOfDayInTz,
-  weekdayOf,
-  tzHmToUtcISO
 } from '@/lib/medication-utils'
+import { generateDosesForSchedule } from '@/lib/dose-generation'
 
 /**
  * Cron job to generate dose logs for the next horizon
@@ -68,6 +66,8 @@ export async function POST(request: NextRequest) {
       const userTimezone = user.settings?.timezone || 'UTC'
 
       for (const prescription of user.prescriptions) {
+        const prescriptionEndDate = prescription.endDate ? startOfDayInTz(prescription.endDate, userTimezone) : null
+
         for (const schedule of prescription.schedules) {
           const scheduleTimezone = schedule.timezone || userTimezone
 
@@ -75,58 +75,50 @@ export async function POST(request: NextRequest) {
           const startDate = nowInTz(scheduleTimezone)
           const endDate = addDaysInTz(startDate, horizonDays, scheduleTimezone)
 
-          const generatedDoses = []
-          const currentDate = startOfDayInTz(startDate, scheduleTimezone)
+          try {
+            const result = await generateDosesForSchedule({
+              scheduleId: schedule.id,
+              prescriptionId: prescription.id,
+              schedule: {
+                daysOfWeek: schedule.daysOfWeek as any,
+                times: schedule.times,
+                doseQuantity: schedule.doseQuantity?.toNumber() ?? null,
+                doseUnit: schedule.doseUnit as any,
+              },
+              from: startDate,
+              to: endDate,
+              timezone: scheduleTimezone,
+              prescriptionEndDate: prescription.endDate,
+              scheduleStartDate: schedule.startDate,
+              scheduleEndDate: schedule.endDate,
+            })
 
-          while (currentDate <= endDate) {
-            const weekday = weekdayOf(currentDate, scheduleTimezone)
+            if (result.generated > 0) {
+              totalGenerated += result.generated
 
-            // Check if this day is in the schedule
-            if (schedule.daysOfWeek.includes(weekday)) {
-              // Generate doses for each time in the schedule
-              for (const time of schedule.times) {
-                const scheduledForUtc = tzHmToUtcISO(currentDate, time, scheduleTimezone)
-
-                // Check if dose already exists
-                const existingDose = await prisma.doseLog.findFirst({
-                  where: {
-                    prescriptionId: prescription.id,
-                    scheduleId: schedule.id,
-                    scheduledFor: new Date(scheduledForUtc),
-                  },
-                })
-
-                if (!existingDose) {
-                  const doseLog = await prisma.doseLog.create({
-                    data: {
-                      prescriptionId: prescription.id,
-                      scheduleId: schedule.id,
-                      scheduledFor: new Date(scheduledForUtc),
-                      status: 'SCHEDULED',
-                      quantity: schedule.doseQuantity,
-                      unit: schedule.doseUnit,
-                    },
-                  })
-                  generatedDoses.push(doseLog)
-                }
-              }
+              results.push({
+                userId: user.id,
+                userEmail: user.email,
+                prescriptionId: prescription.id,
+                scheduleId: schedule.id,
+                timezone: scheduleTimezone,
+                generatedCount: result.generated,
+                skippedCount: result.skipped,
+                errors: result.errors,
+                horizonDays
+              })
             }
-
-            // Move to next day in timezone
-            const nextDay = addDaysInTz(currentDate, 1, scheduleTimezone)
-            currentDate.setTime(nextDay.getTime())
-          }
-
-          if (generatedDoses.length > 0) {
-            totalGenerated += generatedDoses.length
-
+          } catch (error) {
+            console.error(`Error generating doses for schedule ${schedule.id}:`, error)
             results.push({
               userId: user.id,
               userEmail: user.email,
               prescriptionId: prescription.id,
               scheduleId: schedule.id,
               timezone: scheduleTimezone,
-              generatedCount: generatedDoses.length,
+              generatedCount: 0,
+              skippedCount: 0,
+              errors: [error instanceof Error ? error.message : 'Unknown error'],
               horizonDays
             })
           }

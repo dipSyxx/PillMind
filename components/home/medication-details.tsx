@@ -16,14 +16,18 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/u
 import { weekdayLabelShort } from '@/lib/medication-utils'
 import { Inventory, Medication, Prescription, Schedule } from '@/types/medication'
 import { format, parseISO } from 'date-fns'
-import { AlertCircle, Calendar, Clock, Pill, Trash2 } from 'lucide-react'
+import { AlertCircle, Calendar, Clock, Edit, Pill, Plus, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { PrescriptionEditDialog } from './prescription-edit-dialog'
+import { ScheduleAddDialog } from './schedule-add-dialog'
+import { ScheduleEditDialog } from './schedule-edit-dialog'
 
 interface MedicationDetailsProps {
   medication: Medication & { inventory?: Inventory | null }
   prescriptions: (Prescription & { schedules?: Schedule[]; medication?: Medication | null })[]
   timeFormat: 'H12' | 'H24'
+  timezone: string
   open?: boolean
   onClose: () => void
   onEdit: () => void
@@ -34,6 +38,7 @@ export function MedicationDetails({
   medication,
   prescriptions,
   timeFormat,
+  timezone,
   open = true,
   onClose,
   onEdit,
@@ -43,6 +48,9 @@ export function MedicationDetails({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const isDeletingRef = useRef(false)
+  const [editingSchedule, setEditingSchedule] = useState<Schedule | null>(null)
+  const [addingScheduleForPrescription, setAddingScheduleForPrescription] = useState<string | null>(null)
+  const [editingPrescription, setEditingPrescription] = useState<Prescription | null>(null)
 
   const activePrescriptions = prescriptions.filter((rx) => !rx.endDate || new Date(rx.endDate) > new Date())
 
@@ -246,28 +254,95 @@ export function MedicationDetails({
                           )}
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => handleDeletePrescription(rx.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setEditingPrescription(rx)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeletePrescription(rx.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Schedules */}
-                    {rx.schedules && rx.schedules.length > 0 && (
-                      <div className="pt-3 border-t border-[#E2E8F0]">
-                        <div className="text-xs font-medium text-[#64748B] mb-2">Schedules:</div>
+                    <div className="pt-3 border-t border-[#E2E8F0]">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs font-medium text-[#64748B]">
+                          Schedules ({rx.schedules?.length || 0}):
+                        </div>
+                        {(!rx.endDate || new Date(rx.endDate) > new Date()) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => setAddingScheduleForPrescription(rx.id)}
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Add Schedule
+                          </Button>
+                        )}
+                      </div>
+                      {rx.schedules && rx.schedules.length > 0 && (
                         <div className="space-y-2">
                           {rx.schedules.map((schedule) => (
                             <div key={schedule.id} className="bg-white rounded-lg p-3 border border-[#E2E8F0]">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Clock className="w-3 h-3 text-[#64748B]" />
-                                <span className="text-xs font-medium text-[#0F172A]">
-                                  {schedule.doseQuantity} {schedule.doseUnit}
-                                </span>
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-3 h-3 text-[#64748B]" />
+                                  <span className="text-xs font-medium text-[#0F172A]">
+                                    {schedule.doseQuantity} {schedule.doseUnit}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => {
+                                      setEditingSchedule(schedule)
+                                    }}
+                                  >
+                                    <Edit className="w-3 h-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                                    onClick={async () => {
+                                      if (confirm('Are you sure you want to delete this schedule?')) {
+                                        try {
+                                          const res = await fetch(`/api/schedules/${schedule.id}`, {
+                                            method: 'DELETE',
+                                          })
+                                          if (res.ok) {
+                                            toast.success('Schedule deleted')
+                                            // Refresh the component
+                                            if (onPrescriptionDeleted) {
+                                              await onPrescriptionDeleted()
+                                            }
+                                          } else {
+                                            const error = await res.json()
+                                            toast.error(error.error || 'Failed to delete schedule')
+                                          }
+                                        } catch (e) {
+                                          toast.error('Failed to delete schedule')
+                                        }
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </Button>
+                                </div>
                               </div>
                               <div className="flex flex-wrap gap-1 mb-2">
                                 {schedule.daysOfWeek.map((day) => (
@@ -286,8 +361,11 @@ export function MedicationDetails({
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      )}
+                      {(!rx.schedules || rx.schedules.length === 0) && (
+                        <div className="text-xs text-[#64748B] py-2">No schedules yet</div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -330,6 +408,52 @@ export function MedicationDetails({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Schedule Edit Dialog */}
+      {editingSchedule && (
+        <ScheduleEditDialog
+          schedule={editingSchedule}
+          open={!!editingSchedule}
+          onClose={() => setEditingSchedule(null)}
+          onSaved={async () => {
+            if (onPrescriptionDeleted) {
+              await onPrescriptionDeleted()
+            }
+          }}
+          timezone={timezone}
+          timeFormat={timeFormat}
+        />
+      )}
+
+      {/* Schedule Add Dialog */}
+      {addingScheduleForPrescription && (
+        <ScheduleAddDialog
+          prescriptionId={addingScheduleForPrescription}
+          open={!!addingScheduleForPrescription}
+          onClose={() => setAddingScheduleForPrescription(null)}
+          onSaved={async () => {
+            if (onPrescriptionDeleted) {
+              await onPrescriptionDeleted()
+            }
+          }}
+          timezone={timezone}
+          timeFormat={timeFormat}
+        />
+      )}
+
+      {/* Prescription Edit Dialog */}
+      {editingPrescription && (
+        <PrescriptionEditDialog
+          prescription={editingPrescription}
+          open={!!editingPrescription}
+          onClose={() => setEditingPrescription(null)}
+          onSaved={async () => {
+            if (onPrescriptionDeleted) {
+              await onPrescriptionDeleted()
+            }
+          }}
+        />
+      )}
     </Drawer>
   )
 }

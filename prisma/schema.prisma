@@ -328,6 +328,7 @@ model DoseLog {
   @@index([prescriptionId])
   @@index([scheduleId])
   @@index([scheduledFor])
+  @@unique([prescriptionId, scheduleId, scheduledFor])
 }
 
 // Stock tracking / low-stock threshold

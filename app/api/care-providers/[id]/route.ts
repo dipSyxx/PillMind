@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/prisma/prisma-client'
 import { getUserIdFromSession } from '@/lib/session'
+import prisma from '@/prisma/prisma-client'
+import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 const careProviderUpdateSchema = z.object({
@@ -10,18 +10,16 @@ const careProviderUpdateSchema = z.object({
   clinic: z.string().optional(),
 })
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getUserIdFromSession()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
+    const { id } = await params
     const careProvider = await prisma.careProvider.findFirst({
-      where: { id: params.id, userId },
+      where: { id, userId },
       include: {
         prescriptions: {
           include: {
@@ -43,22 +41,20 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getUserIdFromSession()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
+    const { id } = await params
     const body = await request.json()
     const validatedData = careProviderUpdateSchema.parse(body)
 
     // Check if care provider exists and belongs to user
     const existingCareProvider = await prisma.careProvider.findFirst({
-      where: { id: params.id, userId },
+      where: { id, userId },
     })
 
     if (!existingCareProvider) {
@@ -66,7 +62,7 @@ export async function PUT(
     }
 
     const careProvider = await prisma.careProvider.update({
-      where: { id: params.id },
+      where: { id },
       data: validatedData,
     })
 
@@ -80,19 +76,17 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getUserIdFromSession()
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
+    const { id } = await params
     // Check if care provider exists and belongs to user
     const existingCareProvider = await prisma.careProvider.findFirst({
-      where: { id: params.id, userId },
+      where: { id, userId },
       include: {
         prescriptions: true,
       },
@@ -104,13 +98,16 @@ export async function DELETE(
 
     // Check if care provider has active prescriptions
     if (existingCareProvider.prescriptions.length > 0) {
-      return NextResponse.json({
-        error: 'Cannot delete care provider with active prescriptions'
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: 'Cannot delete care provider with active prescriptions',
+        },
+        { status: 400 },
+      )
     }
 
     await prisma.careProvider.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ message: 'Care provider deleted successfully' })

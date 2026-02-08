@@ -116,6 +116,9 @@ export type DraftMedication = {
   indication?: string
   instructions?: string
   maxDailyDose?: number
+  providerId?: string // Care provider ID, optional
+  startDate?: string // ISO date string, optional
+  endDate?: string // ISO date string, optional
   // Schedule
   doseQuantity?: number
   doseUnit?: Unit

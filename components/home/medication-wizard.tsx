@@ -37,11 +37,21 @@ interface MedicationWizardProps {
 
 type WizardStep = 1 | 2 | 3 | 4
 
+interface CareProvider {
+  id: string
+  name: string
+  email: string | null
+  phone: string | null
+  clinic: string | null
+}
+
 export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, timeFormat }: MedicationWizardProps) {
   const [step, setStep] = useState<WizardStep>(1)
   const [saving, setSaving] = useState(false)
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
   const [viewportHeight, setViewportHeight] = useState<number | null>(null)
+  const [careProviders, setCareProviders] = useState<CareProvider[]>([])
+  const [loadingProviders, setLoadingProviders] = useState(false)
   const [draft, setDraft] = useState<DraftMedication>({
     name: initial?.name ?? '',
     brandName: initial?.brandName ?? '',
@@ -54,6 +64,9 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     indication: initial?.indication ?? '',
     instructions: initial?.instructions ?? '',
     maxDailyDose: initial?.maxDailyDose,
+    providerId: initial?.providerId,
+    startDate: initial?.startDate,
+    endDate: initial?.endDate,
     doseQuantity: initial?.doseQuantity ?? 1,
     doseUnit: initial?.doseUnit ?? 'TAB',
     daysOfWeek: initial?.daysOfWeek ?? ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
@@ -64,6 +77,24 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
     inventoryLastRestockedAt: initial?.inventoryLastRestockedAt,
   })
   const [touchedSteps, setTouchedSteps] = useState<WizardStep[]>([])
+
+  // Load care providers when step 2 is active
+  useEffect(() => {
+    if (step === 2 && careProviders.length === 0 && !loadingProviders) {
+      setLoadingProviders(true)
+      fetch('/api/care-providers', { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data) => {
+          setCareProviders(data)
+        })
+        .catch((e) => {
+          console.error('Failed to load care providers:', e)
+        })
+        .finally(() => {
+          setLoadingProviders(false)
+        })
+    }
+  }, [step, careProviders.length, loadingProviders])
 
   // Update draft when initial prop changes
   useEffect(() => {
@@ -80,6 +111,9 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
         indication: initial.indication ?? '',
         instructions: initial.instructions ?? '',
         maxDailyDose: initial.maxDailyDose,
+        providerId: initial.providerId,
+        startDate: initial.startDate,
+        endDate: initial.endDate,
         doseQuantity: initial.doseQuantity ?? 1,
         doseUnit: initial.doseUnit ?? 'TAB',
         daysOfWeek: initial.daysOfWeek ?? ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
@@ -409,16 +443,23 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
               onChange={(e) => update('indication', e.target.value)}
               onFocus={handleInputFocus}
             />
-            <Input
-              label="Instructions *"
-              placeholder="e.g., 1 tab twice daily"
-              value={draft.instructions}
-              required
-              aria-invalid={step2Touched && instructionsMissing ? 'true' : undefined}
-              className={cn(step2Touched && instructionsMissing && 'border-red-400 focus-visible:ring-red-400')}
-              onChange={(e) => update('instructions', e.target.value)}
-              onFocus={handleInputFocus}
-            />
+            <div>
+              <label className="block text-sm font-medium text-[#0F172A] mb-2">
+                Instructions <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                className={cn(
+                  'w-full min-h-[100px] px-3 py-2 text-sm border border-[#E2E8F0] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0EA8BC] focus:border-transparent',
+                  step2Touched && instructionsMissing && 'border-red-400 focus-visible:ring-red-400',
+                )}
+                placeholder="e.g., 1 tab twice daily"
+                value={draft.instructions}
+                required
+                aria-invalid={step2Touched && instructionsMissing ? 'true' : undefined}
+                onChange={(e) => update('instructions', e.target.value)}
+                onFocus={handleInputFocus}
+              />
+            </div>
             {draft.asNeeded && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
                 <Input
@@ -442,6 +483,62 @@ export function MedicationWizard({ mode, initial, onSaved, onClose, timezone, ti
                 </div>
               </div>
             )}
+
+            {/* Care Provider */}
+            <div>
+              <label className="block text-sm font-medium text-[#0F172A] mb-2">Care Provider (optional)</label>
+              {loadingProviders ? (
+                <div className="text-sm text-[#64748B]">Loading providers...</div>
+              ) : (
+                <Select
+                  value={draft.providerId || '__none__'}
+                  onValueChange={(value) => update('providerId', value === '__none__' ? undefined : value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a care provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
+                    {careProviders.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        {provider.name} {provider.clinic && `- ${provider.clinic}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-2">
+              <Input
+                label="Start date (optional)"
+                type="date"
+                value={
+                  draft.startDate && !Number.isNaN(new Date(draft.startDate).getTime())
+                    ? format(new Date(draft.startDate), 'yyyy-MM-dd')
+                    : ''
+                }
+                onChange={(e) => {
+                  const value = e.target.value
+                  update('startDate', value ? new Date(value).toISOString() : undefined)
+                }}
+                onFocus={handleInputFocus}
+              />
+              <Input
+                label="End date (optional)"
+                type="date"
+                value={
+                  draft.endDate && !Number.isNaN(new Date(draft.endDate).getTime())
+                    ? format(new Date(draft.endDate), 'yyyy-MM-dd')
+                    : ''
+                }
+                onChange={(e) => {
+                  const value = e.target.value
+                  update('endDate', value ? new Date(value).toISOString() : undefined)
+                }}
+                onFocus={handleInputFocus}
+              />
+            </div>
 
             {showStep2Errors && <ValidationErrors messages={step2Errors} />}
 
@@ -965,6 +1062,14 @@ function getStepErrors(step: WizardStep, draft: DraftMedication): string[] {
       if (!trim(draft.instructions)) errors.push('Medication instructions are required.')
       if (draft.asNeeded && !isPositiveNumber(draft.maxDailyDose)) {
         errors.push('Provide a positive max per day value for PRN medications.')
+      }
+      if (draft.endDate) {
+        const endDate = new Date(draft.endDate)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        if (endDate < today) {
+          errors.push('End date must be today or in the future.')
+        }
       }
       return errors
     }

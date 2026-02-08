@@ -198,6 +198,9 @@ importers:
       '@types/react-dom':
         specifier: ^19.1.9
         version: 19.1.9(@types/react@19.1.14)
+      dotenv:
+        specifier: ^17.2.4
+        version: 17.2.4
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
@@ -1620,6 +1623,10 @@ packages:
 
   dotenv@16.6.1:
     resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
+
+  dotenv@17.2.4:
+    resolution: {integrity: sha512-mudtfb4zRB4bVvdj0xRo+e6duH1csJRM8IukBqfTRvHotn9+LBXB8ynAidP9zHqoRC/fsllXgk4kCKlR21fIhw==}
     engines: {node: '>=12'}
 
   effect@3.16.12:
@@ -3477,6 +3484,8 @@ snapshots:
   detect-node-es@1.1.0: {}
 
   dotenv@16.6.1: {}
+
+  dotenv@17.2.4: {}
 
   effect@3.16.12:
     dependencies:

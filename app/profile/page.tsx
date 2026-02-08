@@ -23,26 +23,35 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Bell,
   Calendar,
   Check,
+  Edit,
   ExternalLink,
   Eye,
   EyeOff,
+  Heart,
   Info,
   Key,
+  Loader2,
   Lock,
   LogOut,
   Mail,
+  Phone,
   Pill,
+  Plus,
   Save,
   SettingsIcon,
   Shield,
   Trash2,
+  Upload,
   User,
+  X,
 } from 'lucide-react'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 type TimeFormat = 'H12' | 'H24'
 type Channel = 'PUSH' | 'EMAIL' | 'SMS'
@@ -63,6 +72,34 @@ type UserPublic = {
   createdAt: string
   updatedAt: string
   hasPassword: boolean
+  age: number | null
+  weight: number | null
+  height: number | null
+  sex: 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY' | null
+  goals: Array<
+    | 'GENERAL_HEALTH'
+    | 'WEIGHT_MANAGEMENT'
+    | 'CHRONIC_CONDITION_MANAGEMENT'
+    | 'PREVENTIVE_CARE'
+    | 'FITNESS_PERFORMANCE'
+    | 'MENTAL_HEALTH'
+    | 'OTHER'
+  >
+  medicalConditions: Array<
+    | 'DIABETES'
+    | 'HYPERTENSION'
+    | 'HEART_DISEASE'
+    | 'ASTHMA'
+    | 'ARTHRITIS'
+    | 'DEPRESSION'
+    | 'ANXIETY'
+    | 'THYROID_DISORDERS'
+    | 'KIDNEY_DISEASE'
+    | 'LIVER_DISEASE'
+    | 'CANCER'
+    | 'AUTOIMMUNE_DISORDERS'
+    | 'OTHER'
+  >
 }
 
 interface UserProfile extends Omit<UserPublic, 'emailVerified'> {
@@ -75,7 +112,7 @@ interface AccountInfo {
   hasPassword: boolean
 }
 
-type TabId = 'profile' | 'security' | 'accounts' | 'settings' | 'danger'
+type TabId = 'profile' | 'health' | 'security' | 'accounts' | 'settings' | 'notifications' | 'danger'
 
 export default function ProfilePage() {
   const { data: session, status } = useSession()
@@ -117,6 +154,89 @@ export default function ProfilePage() {
   const [settingsError, setSettingsError] = useState<string | null>(null)
   const [settings, setSettings] = useState<UserSettings | null>(null)
 
+  // === Health Profile state ===
+  const [healthData, setHealthData] = useState({
+    age: null as number | null,
+    weight: null as number | null,
+    height: null as number | null,
+    sex: null as 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY' | null,
+    goals: [] as Array<
+      | 'GENERAL_HEALTH'
+      | 'WEIGHT_MANAGEMENT'
+      | 'CHRONIC_CONDITION_MANAGEMENT'
+      | 'PREVENTIVE_CARE'
+      | 'FITNESS_PERFORMANCE'
+      | 'MENTAL_HEALTH'
+      | 'OTHER'
+    >,
+    medicalConditions: [] as Array<
+      | 'DIABETES'
+      | 'HYPERTENSION'
+      | 'HEART_DISEASE'
+      | 'ASTHMA'
+      | 'ARTHRITIS'
+      | 'DEPRESSION'
+      | 'ANXIETY'
+      | 'THYROID_DISORDERS'
+      | 'KIDNEY_DISEASE'
+      | 'LIVER_DISEASE'
+      | 'CANCER'
+      | 'AUTOIMMUNE_DISORDERS'
+      | 'OTHER'
+    >,
+  })
+  const [healthErrors, setHealthErrors] = useState<Record<string, string>>({})
+
+  // === CareProvider state ===
+  const [careProviders, setCareProviders] = useState<
+    Array<{
+      id: string
+      name: string
+      email: string | null
+      phone: string | null
+      clinic: string | null
+      createdAt: string
+      updatedAt: string
+    }>
+  >([])
+  const [careProvidersLoading, setCareProvidersLoading] = useState(true)
+  const [careProvidersFetched, setCareProvidersFetched] = useState(false)
+  const [showCareProviderForm, setShowCareProviderForm] = useState(false)
+  const [editingCareProvider, setEditingCareProvider] = useState<string | null>(null)
+  const [careProviderForm, setCareProviderForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    clinic: '',
+  })
+  const [careProviderErrors, setCareProviderErrors] = useState<Record<string, string>>({})
+
+  // === NotificationLog state ===
+  const [notificationLogs, setNotificationLogs] = useState<
+    Array<{
+      id: string
+      channel: string
+      status: string
+      sentAt: string
+      meta: any
+      doseLog: {
+        scheduledFor?: string
+        prescription: {
+          medication: {
+            name: string
+          }
+        }
+      } | null
+    }>
+  >([])
+  const [notificationLogsLoading, setNotificationLogsLoading] = useState(true)
+  const [notificationFilter, setNotificationFilter] = useState<'all' | 'EMAIL' | 'SMS' | 'PUSH'>('all')
+  const [notificationStatusFilter, setNotificationStatusFilter] = useState<'all' | 'SENT' | 'FAILED' | 'PENDING'>('all')
+
+  // === Image Upload state ===
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
+
   // ---------- Guards ----------
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -129,6 +249,8 @@ export default function ProfilePage() {
       void fetchUser()
       void fetchAccountInfo()
       void fetchSettings()
+      void fetchCareProviders()
+      void fetchNotificationLogs()
     }
   }, [status])
 
@@ -137,6 +259,12 @@ export default function ProfilePage() {
       void fetchSettings()
     }
   }, [activeTab, settings, settingsLoading])
+
+  useEffect(() => {
+    if (activeTab === 'health' && !careProvidersFetched && !careProvidersLoading) {
+      void fetchCareProviders()
+    }
+  }, [activeTab, careProvidersFetched, careProvidersLoading]) // Use flag instead of length to prevent infinite loop
 
   // ---------- Fetchers ----------
   const fetchUser = async () => {
@@ -154,6 +282,20 @@ export default function ProfilePage() {
         updatedAt: data.updatedAt,
         emailVerified: data.emailVerified,
         hasPassword: data.hasPassword,
+        age: data.age,
+        weight: data.weight,
+        height: data.height,
+        sex: data.sex,
+        goals: data.goals,
+        medicalConditions: data.medicalConditions,
+      })
+      setHealthData({
+        age: data.age,
+        weight: data.weight,
+        height: data.height,
+        sex: data.sex,
+        goals: data.goals,
+        medicalConditions: data.medicalConditions,
       })
     } catch (e) {
       console.error(e)
@@ -421,6 +563,174 @@ export default function ProfilePage() {
     }
   }
 
+  const handleHealthProfileSave = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+    setHealthErrors({})
+    setLoading(true)
+    try {
+      const res = await fetch('/api/profile/user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(healthData),
+      })
+      if (res.ok) {
+        const updated = await res.json()
+        setProfile((p) => (p ? { ...p, ...updated } : null))
+        setHealthData({
+          age: updated.age,
+          weight: updated.weight,
+          height: updated.height,
+          sex: updated.sex,
+          goals: updated.goals,
+          medicalConditions: updated.medicalConditions,
+        })
+        setSuccess('Health profile updated successfully!')
+      } else {
+        const errorData = await res.json()
+        if (errorData.details) {
+          const errors: Record<string, string> = {}
+          errorData.details.forEach((issue: any) => {
+            if (issue.path?.[0]) errors[issue.path[0]] = issue.message
+          })
+          setHealthErrors(errors)
+          setError('Please fix the errors below and try again.')
+        } else {
+          setError(errorData.error || 'Failed to update health profile')
+        }
+      }
+    } catch (e: any) {
+      setError('An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchCareProviders = async () => {
+    if (careProvidersFetched) return // Prevent duplicate fetches
+    setCareProvidersLoading(true)
+    try {
+      const res = await fetch('/api/care-providers', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to load care providers')
+      const data = await res.json()
+      setCareProviders(data)
+      setCareProvidersFetched(true)
+    } catch (e) {
+      console.error(e)
+      setError('Unable to load care providers.')
+    } finally {
+      setCareProvidersLoading(false)
+    }
+  }
+
+  const handleCareProviderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setSuccess(null)
+    setCareProviderErrors({})
+    setLoading(true)
+    try {
+      const payload = {
+        name: careProviderForm.name.trim(),
+        email: careProviderForm.email.trim() || undefined,
+        phone: careProviderForm.phone.trim() || undefined,
+        clinic: careProviderForm.clinic.trim() || undefined,
+      }
+      const url = editingCareProvider ? `/api/care-providers/${editingCareProvider}` : '/api/care-providers'
+      const method = editingCareProvider ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        setSuccess(editingCareProvider ? 'Care provider updated successfully!' : 'Care provider created successfully!')
+        setShowCareProviderForm(false)
+        setEditingCareProvider(null)
+        setCareProviderForm({ name: '', email: '', phone: '', clinic: '' })
+        setCareProvidersFetched(false) // Reset flag to allow refetch
+        void fetchCareProviders()
+      } else {
+        const errorData = await res.json()
+        if (errorData.details) {
+          const errors: Record<string, string> = {}
+          errorData.details.forEach((issue: any) => {
+            if (issue.path?.[0]) errors[issue.path[0]] = issue.message
+          })
+          setCareProviderErrors(errors)
+          setError('Please fix the errors below and try again.')
+        } else {
+          setError(errorData.error || 'Failed to save care provider')
+        }
+      }
+    } catch (e: any) {
+      setError('An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCareProviderDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this care provider?')) return
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/care-providers/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setSuccess('Care provider deleted successfully!')
+        setCareProvidersFetched(false) // Reset flag to allow refetch
+        void fetchCareProviders()
+      } else {
+        const errorData = await res.json()
+        setError(errorData.error || 'Failed to delete care provider')
+      }
+    } catch {
+      setError('Failed to delete care provider')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCareProviderEdit = (provider: (typeof careProviders)[0]) => {
+    setEditingCareProvider(provider.id)
+    setCareProviderForm({
+      name: provider.name,
+      email: provider.email || '',
+      phone: provider.phone || '',
+      clinic: provider.clinic || '',
+    })
+    setShowCareProviderForm(true)
+  }
+
+  const fetchNotificationLogs = async () => {
+    setNotificationLogsLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (notificationFilter !== 'all') {
+        params.set('channel', notificationFilter)
+      }
+      if (notificationStatusFilter !== 'all') {
+        params.set('status', notificationStatusFilter)
+      }
+      params.set('limit', '100')
+      const res = await fetch(`/api/notifications?${params.toString()}`, { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to load notification logs')
+      const data = await res.json()
+      setNotificationLogs(data)
+    } catch (e) {
+      console.error(e)
+      setError('Unable to load notification logs.')
+    } finally {
+      setNotificationLogsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'notifications') {
+      void fetchNotificationLogs()
+    }
+  }, [notificationFilter, notificationStatusFilter, activeTab])
+
   // ---------- Global first-render loader ----------
   if (status === 'loading' || (userLoading && !profile)) {
     return (
@@ -454,9 +764,11 @@ export default function ProfilePage() {
 
   const tabs: { id: TabId; label: string; icon: any }[] = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'health', label: 'Health Profile', icon: Heart },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'accounts', label: 'Accounts', icon: ExternalLink },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'danger', label: 'Danger Zone', icon: AlertTriangle },
   ]
 
@@ -691,11 +1003,11 @@ export default function ProfilePage() {
                         <div className="group p-4 bg-white border border-[#E2E8F0] rounded-[12px] hover:border-[#0EA8BC]/30 hover:shadow-sm transition-all duration-200">
                           <div className="flex items-center gap-4">
                             <div className="relative">
-                              {profile?.image ? (
+                              {imagePreview || profile?.image ? (
                                 <div className="w-12 h-12 rounded-[12px] overflow-hidden border-2 border-[#0EA8BC]/20 shadow-sm">
                                   <img
-                                    src={profile.image}
-                                    alt={profile.name || 'User'}
+                                    src={imagePreview || profile?.image || ''}
+                                    alt={profile?.name || 'User'}
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
@@ -711,8 +1023,91 @@ export default function ProfilePage() {
                             <div className="flex-1">
                               <p className="text-sm text-[#64748B]">Profile Picture</p>
                               <p className="font-medium text-[#0F172A]">
-                                {profile?.image ? 'Custom avatar' : 'Default avatar with initials'}
+                                {imagePreview || profile?.image ? 'Custom avatar' : 'Default avatar with initials'}
                               </p>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <label
+                                htmlFor="image-upload"
+                                className={cn(
+                                  'px-3 py-1.5 text-xs font-medium rounded-lg border cursor-pointer transition-colors',
+                                  uploadingImage
+                                    ? 'bg-[#E2E8F0] text-[#64748B] cursor-not-allowed'
+                                    : 'bg-white border-[#0EA8BC] text-[#0EA8BC] hover:bg-[#0EA8BC]/5',
+                                )}
+                              >
+                                {uploadingImage ? (
+                                  <span className="flex items-center gap-1">
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                    Uploading...
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-1">
+                                    <Upload className="w-3 h-3" />
+                                    Change
+                                  </span>
+                                )}
+                              </label>
+                              <input
+                                id="image-upload"
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp"
+                                className="hidden"
+                                disabled={uploadingImage}
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0]
+                                  if (!file) return
+
+                                  // Validate file type
+                                  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+                                  if (!allowedTypes.includes(file.type)) {
+                                    toast.error('Invalid file type. Only JPEG, PNG, and WebP are allowed.')
+                                    return
+                                  }
+
+                                  // Validate file size (max 5MB)
+                                  const maxSize = 5 * 1024 * 1024
+                                  if (file.size > maxSize) {
+                                    toast.error('File size exceeds 5MB limit')
+                                    return
+                                  }
+
+                                  // Show preview
+                                  const reader = new FileReader()
+                                  reader.onloadend = () => {
+                                    setImagePreview(reader.result as string)
+                                  }
+                                  reader.readAsDataURL(file)
+
+                                  // Upload
+                                  setUploadingImage(true)
+                                  try {
+                                    const formData = new FormData()
+                                    formData.append('image', file)
+
+                                    const res = await fetch('/api/profile/user/upload-image', {
+                                      method: 'POST',
+                                      body: formData,
+                                    })
+
+                                    if (res.ok) {
+                                      const updatedUser = await res.json()
+                                      setProfile(updatedUser)
+                                      toast.success('Profile image updated successfully')
+                                      setImagePreview(null)
+                                    } else {
+                                      const error = await res.json()
+                                      toast.error(error.error || 'Failed to upload image')
+                                      setImagePreview(null)
+                                    }
+                                  } catch (err) {
+                                    toast.error('Failed to upload image')
+                                    setImagePreview(null)
+                                  } finally {
+                                    setUploadingImage(false)
+                                  }
+                                }}
+                              />
                             </div>
                           </div>
                         </div>
@@ -861,6 +1256,463 @@ export default function ProfilePage() {
                         </div>
                       </div>
                     </motion.div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* HEALTH PROFILE */}
+              {activeTab === 'health' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-8"
+                >
+                  <div className="bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-[16px] p-6 border border-[#E2E8F0]">
+                    <div className="flex items-center gap-3">
+                      <Heart className="w-5 h-5 text-[#0EA8BC]" />
+                      <div>
+                        <h2 className="text-xl font-bold text-[#0F172A]">Health Profile</h2>
+                        <p className="text-[#64748B]">Help us personalize your medication management experience</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <form onSubmit={handleHealthProfileSave} className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Age */}
+                      <div className="space-y-2">
+                        <label htmlFor="age" className="text-sm font-medium text-[#0F172A]">
+                          Age
+                        </label>
+                        <Input
+                          id="age"
+                          type="number"
+                          min="1"
+                          max="150"
+                          value={healthData.age ?? ''}
+                          onChange={(e) =>
+                            setHealthData({ ...healthData, age: e.target.value ? parseInt(e.target.value) : null })
+                          }
+                          className={cn(healthErrors.age && 'border-red-500')}
+                          placeholder="Enter your age"
+                        />
+                        {healthErrors.age && <p className="text-xs text-red-500">{healthErrors.age}</p>}
+                      </div>
+
+                      {/* Weight */}
+                      <div className="space-y-2">
+                        <label htmlFor="weight" className="text-sm font-medium text-[#0F172A]">
+                          Weight (kg)
+                        </label>
+                        <Input
+                          id="weight"
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="500"
+                          value={healthData.weight ?? ''}
+                          onChange={(e) =>
+                            setHealthData({
+                              ...healthData,
+                              weight: e.target.value ? parseFloat(e.target.value) : null,
+                            })
+                          }
+                          className={cn(healthErrors.weight && 'border-red-500')}
+                          placeholder="Enter your weight in kg"
+                        />
+                        {healthErrors.weight && <p className="text-xs text-red-500">{healthErrors.weight}</p>}
+                      </div>
+
+                      {/* Height */}
+                      <div className="space-y-2">
+                        <label htmlFor="height" className="text-sm font-medium text-[#0F172A]">
+                          Height (cm)
+                        </label>
+                        <Input
+                          id="height"
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="300"
+                          value={healthData.height ?? ''}
+                          onChange={(e) =>
+                            setHealthData({
+                              ...healthData,
+                              height: e.target.value ? parseFloat(e.target.value) : null,
+                            })
+                          }
+                          className={cn(healthErrors.height && 'border-red-500')}
+                          placeholder="Enter your height in cm"
+                        />
+                        {healthErrors.height && <p className="text-xs text-red-500">{healthErrors.height}</p>}
+                      </div>
+
+                      {/* Sex */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-[#0F172A]">Sex</label>
+                        <RadioGroup
+                          value={healthData.sex ?? ''}
+                          onValueChange={(value) =>
+                            setHealthData({
+                              ...healthData,
+                              sex: value === '' ? null : (value as typeof healthData.sex),
+                            })
+                          }
+                        >
+                          <div className="flex flex-wrap gap-4">
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="MALE" id="sex-male" />
+                              <label htmlFor="sex-male" className="text-sm text-[#0F172A] cursor-pointer">
+                                Male
+                              </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="FEMALE" id="sex-female" />
+                              <label htmlFor="sex-female" className="text-sm text-[#0F172A] cursor-pointer">
+                                Female
+                              </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="OTHER" id="sex-other" />
+                              <label htmlFor="sex-other" className="text-sm text-[#0F172A] cursor-pointer">
+                                Other
+                              </label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem value="PREFER_NOT_TO_SAY" id="sex-prefer-not" />
+                              <label htmlFor="sex-prefer-not" className="text-sm text-[#0F172A] cursor-pointer">
+                                Prefer not to say
+                              </label>
+                            </div>
+                          </div>
+                        </RadioGroup>
+                        {healthErrors.sex && <p className="text-xs text-red-500">{healthErrors.sex}</p>}
+                      </div>
+                    </div>
+
+                    {/* Goals */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-[#0F172A]">Health Goals</label>
+                      <p className="text-xs text-[#64748B] mb-3">Select all that apply</p>
+                      <div className="flex flex-wrap gap-3">
+                        {[
+                          { value: 'GENERAL_HEALTH', label: 'General Health' },
+                          { value: 'WEIGHT_MANAGEMENT', label: 'Weight Management' },
+                          { value: 'CHRONIC_CONDITION_MANAGEMENT', label: 'Chronic Condition Management' },
+                          { value: 'PREVENTIVE_CARE', label: 'Preventive Care' },
+                          { value: 'FITNESS_PERFORMANCE', label: 'Fitness & Performance' },
+                          { value: 'MENTAL_HEALTH', label: 'Mental Health' },
+                          { value: 'OTHER', label: 'Other' },
+                        ].map((goal) => {
+                          const isSelected = healthData.goals.includes(goal.value as any)
+                          return (
+                            <label
+                              key={goal.value}
+                              className={cn(
+                                'inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition select-none',
+                                isSelected ? 'border-primary bg-primary/5' : 'border-input hover:bg-muted/50',
+                              )}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(on) => {
+                                  const isOn = !!on
+                                  setHealthData({
+                                    ...healthData,
+                                    goals: isOn
+                                      ? [...healthData.goals, goal.value as any]
+                                      : healthData.goals.filter((g) => g !== goal.value),
+                                  })
+                                }}
+                              />
+                              <span className="text-sm text-foreground">{goal.label}</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                      {healthErrors.goals && <p className="text-xs text-red-500">{healthErrors.goals}</p>}
+                    </div>
+
+                    {/* Medical Conditions */}
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-[#0F172A]">Medical Conditions</label>
+                      <p className="text-xs text-[#64748B] mb-3">Select all that apply</p>
+                      <div className="flex flex-wrap gap-3">
+                        {[
+                          { value: 'DIABETES', label: 'Diabetes' },
+                          { value: 'HYPERTENSION', label: 'Hypertension' },
+                          { value: 'HEART_DISEASE', label: 'Heart Disease' },
+                          { value: 'ASTHMA', label: 'Asthma' },
+                          { value: 'ARTHRITIS', label: 'Arthritis' },
+                          { value: 'DEPRESSION', label: 'Depression' },
+                          { value: 'ANXIETY', label: 'Anxiety' },
+                          { value: 'THYROID_DISORDERS', label: 'Thyroid Disorders' },
+                          { value: 'KIDNEY_DISEASE', label: 'Kidney Disease' },
+                          { value: 'LIVER_DISEASE', label: 'Liver Disease' },
+                          { value: 'CANCER', label: 'Cancer' },
+                          { value: 'AUTOIMMUNE_DISORDERS', label: 'Autoimmune Disorders' },
+                          { value: 'OTHER', label: 'Other' },
+                        ].map((condition) => {
+                          const isSelected = healthData.medicalConditions.includes(condition.value as any)
+                          return (
+                            <label
+                              key={condition.value}
+                              className={cn(
+                                'inline-flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition select-none',
+                                isSelected ? 'border-primary bg-primary/5' : 'border-input hover:bg-muted/50',
+                              )}
+                            >
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(on) => {
+                                  const isOn = !!on
+                                  setHealthData({
+                                    ...healthData,
+                                    medicalConditions: isOn
+                                      ? [...healthData.medicalConditions, condition.value as any]
+                                      : healthData.medicalConditions.filter((c) => c !== condition.value),
+                                  })
+                                }}
+                              />
+                              <span className="text-sm text-foreground">{condition.label}</span>
+                            </label>
+                          )
+                        })}
+                      </div>
+                      {healthErrors.medicalConditions && (
+                        <p className="text-xs text-red-500">{healthErrors.medicalConditions}</p>
+                      )}
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setHealthData({
+                            age: profile?.age ?? null,
+                            weight: profile?.weight ?? null,
+                            height: profile?.height ?? null,
+                            sex: profile?.sex ?? null,
+                            goals: profile?.goals ?? [],
+                            medicalConditions: profile?.medicalConditions ?? [],
+                          })
+                          setHealthErrors({})
+                        }}
+                        disabled={loading}
+                      >
+                        Reset
+                      </Button>
+                      <Button type="submit" disabled={loading}>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save Health Profile
+                      </Button>
+                    </div>
+                  </form>
+
+                  {/* Care Providers Section */}
+                  <div className="mt-12 pt-8 border-t border-[#E2E8F0]">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-[#0F172A]">Care Providers</h3>
+                        <p className="text-sm text-[#64748B]">Manage your healthcare providers</p>
+                      </div>
+                      <Button
+                        onClick={() => {
+                          setShowCareProviderForm(true)
+                          setEditingCareProvider(null)
+                          setCareProviderForm({ name: '', email: '', phone: '', clinic: '' })
+                          setCareProviderErrors({})
+                        }}
+                        disabled={loading || showCareProviderForm}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Provider
+                      </Button>
+                    </div>
+
+                    {/* Care Provider Form */}
+                    {showCareProviderForm && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-6 p-6 bg-[#F8FAFC] border border-[#E2E8F0] rounded-[12px]"
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-medium text-[#0F172A]">
+                            {editingCareProvider ? 'Edit Care Provider' : 'New Care Provider'}
+                          </h4>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowCareProviderForm(false)
+                              setEditingCareProvider(null)
+                              setCareProviderForm({ name: '', email: '', phone: '', clinic: '' })
+                              setCareProviderErrors({})
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                        <form onSubmit={handleCareProviderSubmit} className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label htmlFor="cp-name" className="text-sm font-medium text-[#0F172A]">
+                                Name <span className="text-red-500">*</span>
+                              </label>
+                              <Input
+                                id="cp-name"
+                                value={careProviderForm.name}
+                                onChange={(e) => setCareProviderForm({ ...careProviderForm, name: e.target.value })}
+                                className={cn(careProviderErrors.name && 'border-red-500')}
+                                placeholder="Dr. John Smith"
+                                required
+                              />
+                              {careProviderErrors.name && (
+                                <p className="text-xs text-red-500">{careProviderErrors.name}</p>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <label htmlFor="cp-email" className="text-sm font-medium text-[#0F172A]">
+                                Email
+                              </label>
+                              <Input
+                                id="cp-email"
+                                type="email"
+                                value={careProviderForm.email}
+                                onChange={(e) => setCareProviderForm({ ...careProviderForm, email: e.target.value })}
+                                className={cn(careProviderErrors.email && 'border-red-500')}
+                                placeholder="doctor@clinic.com"
+                              />
+                              {careProviderErrors.email && (
+                                <p className="text-xs text-red-500">{careProviderErrors.email}</p>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <label htmlFor="cp-phone" className="text-sm font-medium text-[#0F172A]">
+                                Phone
+                              </label>
+                              <Input
+                                id="cp-phone"
+                                type="tel"
+                                value={careProviderForm.phone}
+                                onChange={(e) => setCareProviderForm({ ...careProviderForm, phone: e.target.value })}
+                                className={cn(careProviderErrors.phone && 'border-red-500')}
+                                placeholder="+1 (555) 123-4567"
+                              />
+                              {careProviderErrors.phone && (
+                                <p className="text-xs text-red-500">{careProviderErrors.phone}</p>
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <label htmlFor="cp-clinic" className="text-sm font-medium text-[#0F172A]">
+                                Clinic
+                              </label>
+                              <Input
+                                id="cp-clinic"
+                                value={careProviderForm.clinic}
+                                onChange={(e) => setCareProviderForm({ ...careProviderForm, clinic: e.target.value })}
+                                className={cn(careProviderErrors.clinic && 'border-red-500')}
+                                placeholder="City Medical Center"
+                              />
+                              {careProviderErrors.clinic && (
+                                <p className="text-xs text-red-500">{careProviderErrors.clinic}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-3">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                setShowCareProviderForm(false)
+                                setEditingCareProvider(null)
+                                setCareProviderForm({ name: '', email: '', phone: '', clinic: '' })
+                                setCareProviderErrors({})
+                              }}
+                              disabled={loading}
+                            >
+                              Cancel
+                            </Button>
+                            <Button type="submit" disabled={loading}>
+                              <Save className="w-4 h-4 mr-2" />
+                              {editingCareProvider ? 'Update' : 'Create'} Provider
+                            </Button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    )}
+
+                    {/* Care Providers List */}
+                    {careProvidersLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-8 h-8 border-4 border-[#12B5C9]/30 border-t-[#12B5C9] rounded-full animate-spin" />
+                      </div>
+                    ) : careProviders.length === 0 ? (
+                      <div className="text-center py-8 text-[#64748B]">
+                        <p>No care providers added yet.</p>
+                        <p className="text-sm mt-1">Click "Add Provider" to get started.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {careProviders.map((provider) => (
+                          <div
+                            key={provider.id}
+                            className="p-4 bg-white border border-[#E2E8F0] rounded-[12px] hover:border-[#0EA8BC]/30 transition-all"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <User className="w-4 h-4 text-[#0EA8BC]" />
+                                  <h4 className="font-medium text-[#0F172A]">{provider.name}</h4>
+                                </div>
+                                <div className="space-y-1 text-sm text-[#64748B]">
+                                  {provider.clinic && (
+                                    <div className="flex items-center gap-2">
+                                      <Pill className="w-3 h-3" />
+                                      <span>{provider.clinic}</span>
+                                    </div>
+                                  )}
+                                  {provider.email && (
+                                    <div className="flex items-center gap-2">
+                                      <Mail className="w-3 h-3" />
+                                      <span>{provider.email}</span>
+                                    </div>
+                                  )}
+                                  {provider.phone && (
+                                    <div className="flex items-center gap-2">
+                                      <Phone className="w-3 h-3" />
+                                      <span>{provider.phone}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCareProviderEdit(provider)}
+                                  disabled={loading}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCareProviderDelete(provider.id)}
+                                  disabled={loading}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
@@ -1365,6 +2217,131 @@ export default function ProfilePage() {
                       </div>
                     </form>
                   ) : null}
+                </motion.div>
+              )}
+
+              {/* NOTIFICATIONS */}
+              {activeTab === 'notifications' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="space-y-8"
+                >
+                  <div className="bg-gradient-to-r from-[#F8FAFC] to-[#F1F5F9] rounded-[16px] p-4 sm:p-6 border border-[#E2E8F0]">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#0EA8BC]/10 rounded-[12px] flex items-center justify-center flex-shrink-0">
+                        <Bell className="w-5 h-5 sm:w-6 sm:h-6 text-[#0EA8BC]" />
+                      </div>
+                      <div>
+                        <h2 className="text-lg sm:text-xl font-bold text-[#0F172A]">Notification History</h2>
+                        <p className="text-sm sm:text-base text-[#64748B]">
+                          View all notifications sent for your medication reminders
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filters */}
+                  <div className="flex flex-wrap gap-3">
+                    <Select value={notificationFilter} onValueChange={(v) => setNotificationFilter(v as any)}>
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Channels</SelectItem>
+                        <SelectItem value="EMAIL">Email</SelectItem>
+                        <SelectItem value="SMS">SMS</SelectItem>
+                        <SelectItem value="PUSH">Push</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={notificationStatusFilter}
+                      onValueChange={(v) => setNotificationStatusFilter(v as any)}
+                    >
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="SENT">Sent</SelectItem>
+                        <SelectItem value="FAILED">Failed</SelectItem>
+                        <SelectItem value="PENDING">Pending</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Notification Logs List */}
+                  {notificationLogsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="w-8 h-8 border-4 border-[#12B5C9]/30 border-t-[#12B5C9] rounded-full animate-spin" />
+                    </div>
+                  ) : notificationLogs.length === 0 ? (
+                    <div className="text-center py-12 text-[#64748B]">
+                      <div className="w-16 h-16 bg-[#CBD5E1]/20 rounded-[16px] flex items-center justify-center mx-auto mb-4">
+                        <Bell className="w-8 h-8 text-[#CBD5E1]" />
+                      </div>
+                      <p className="font-medium">No notifications found</p>
+                      <p className="text-sm">Notifications will appear here when medication reminders are sent</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {notificationLogs.map((log: (typeof notificationLogs)[0]) => {
+                        const medicationName =
+                          log.doseLog?.prescription?.medication?.name || log.meta?.medicationName || 'Unknown'
+                        const scheduledFor = log.doseLog?.scheduledFor || log.meta?.scheduledFor
+                        const statusColor =
+                          log.status === 'SENT'
+                            ? 'text-green-700 bg-green-100'
+                            : log.status === 'FAILED'
+                              ? 'text-red-700 bg-red-100'
+                              : 'text-amber-700 bg-amber-100'
+                        const channelIcon =
+                          log.channel === 'EMAIL' ? (
+                            <Mail className="w-4 h-4" />
+                          ) : log.channel === 'SMS' ? (
+                            <Phone className="w-4 h-4" />
+                          ) : (
+                            <Bell className="w-4 h-4" />
+                          )
+
+                        return (
+                          <div
+                            key={log.id}
+                            className="p-4 bg-white border border-[#E2E8F0] rounded-[12px] hover:border-[#0EA8BC]/30 transition-all"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="text-[#0EA8BC]">{channelIcon}</div>
+                                  <h4 className="font-medium text-[#0F172A]">{medicationName}</h4>
+                                  <span className={cn('text-xs px-2 py-0.5 rounded-full', statusColor)}>
+                                    {log.status}
+                                  </span>
+                                </div>
+                                <div className="space-y-1 text-sm text-[#64748B]">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="w-3 h-3" />
+                                    <span>
+                                      {scheduledFor
+                                        ? format(new Date(scheduledFor), 'PPPp', {})
+                                        : 'Scheduled time not available'}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Bell className="w-3 h-3" />
+                                    <span>
+                                      Sent via {log.channel} at {format(new Date(log.sentAt), 'PPPp', {})}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </motion.div>
               )}
 

@@ -1,7 +1,7 @@
-import { medicationService } from './medication-service'
+import { DoseLog, Medication, Prescription, UserSettings } from '@/types/medication'
 import { analyticsService } from './analytics-service'
+import { medicationService } from './medication-service'
 import { notificationService } from './notification-service'
-import { Medication, Prescription, DoseLog, UserSettings } from '@/types/medication'
 
 export interface CompleteMedicationSetup {
   medication: Medication & { inventory?: any }
@@ -33,7 +33,16 @@ export class PillMindService {
       form: 'TABLET' | 'CAPSULE' | 'LIQUID' | 'INJECTION' | 'INHALER' | 'TOPICAL' | 'DROPS' | 'OTHER'
       strengthValue?: number
       strengthUnit?: 'MG' | 'MCG' | 'G' | 'ML' | 'IU' | 'DROP' | 'PUFF' | 'UNIT' | 'TAB' | 'CAPS'
-      route?: 'ORAL' | 'SUBLINGUAL' | 'INHALATION' | 'TOPICAL' | 'INJECTION' | 'OPHTHALMIC' | 'NASAL' | 'RECTAL' | 'OTHER'
+      route?:
+        | 'ORAL'
+        | 'SUBLINGUAL'
+        | 'INHALATION'
+        | 'TOPICAL'
+        | 'INJECTION'
+        | 'OPHTHALMIC'
+        | 'NASAL'
+        | 'RECTAL'
+        | 'OTHER'
       notes?: string
     }
     inventory: {
@@ -49,6 +58,7 @@ export class PillMindService {
       instructions?: string
       startDate: string
       endDate?: string
+      providerId?: string
     }
     schedule?: {
       timezone: string
@@ -65,69 +75,126 @@ export class PillMindService {
     }
     generateDosesForWeeks?: number
   }): Promise<MedicationWorkflow> {
+    // Track created resources for rollback on error
+    const createdResources: {
+      medicationId?: string
+      careProviderId?: string
+      prescriptionId?: string
+    } = {}
+
     try {
       // 1. Create medication with inventory
-      const medication = await medicationService.createMedicationWithInventory({
-        medication: data.medication,
-        inventory: data.inventory,
-      })
+      let medication
+      try {
+        medication = await medicationService.createMedicationWithInventory({
+          medication: data.medication,
+          inventory: data.inventory,
+        })
+        // Track medication ID immediately after creation for rollback
+        createdResources.medicationId = medication.id
+      } catch (error) {
+        // If medication creation fails, nothing to rollback yet
+        throw error
+      }
 
       // 2. Create care provider if provided
       let careProvider = null
       if (data.careProvider) {
-        careProvider = await medicationService.createCareProviderWithPrescriptions({
-          provider: data.careProvider,
-        })
+        try {
+          careProvider = await medicationService.createCareProviderWithPrescriptions({
+            provider: data.careProvider,
+          })
+          createdResources.careProviderId = careProvider.id
+        } catch (error) {
+          // If care provider creation fails, continue without it
+          console.warn('Failed to create care provider, continuing without it:', error)
+        }
       }
 
       // 3. Create prescription with schedule
-      const prescription = await medicationService.createPrescriptionWithSchedule({
-        prescription: {
-          ...data.prescription,
-          medicationId: medication.id,
-          providerId: careProvider?.id,
-        },
-        schedule: data.schedule,
-      })
+      const prescriptionData: {
+        medicationId: string
+        providerId?: string
+        indication?: string
+        asNeeded?: boolean
+        maxDailyDose?: number
+        instructions?: string
+        startDate: string
+        endDate?: string
+      } = {
+        ...data.prescription,
+        medicationId: medication.id,
+        // Use providerId from prescription data if provided (existing provider)
+        // Otherwise use careProvider?.id if a new provider was created
+        providerId: data.prescription.providerId || careProvider?.id,
+      }
+
+      let prescription
+      try {
+        prescription = await medicationService.createPrescriptionWithSchedule({
+          prescription: prescriptionData,
+          schedule: data.schedule,
+        })
+        // Track prescription ID immediately after creation for rollback
+        createdResources.prescriptionId = prescription.id
+      } catch (error) {
+        // If prescription creation fails, rollback will clean up medication and care provider
+        throw error
+      }
 
       // 4. Generate doses if not PRN and schedule provided
       let generatedDoses: DoseLog[] = []
       if (!data.prescription.asNeeded && data.schedule && data.generateDosesForWeeks) {
-        const weeksToGenerate = data.generateDosesForWeeks
-        const startDate = new Date(data.prescription.startDate)
-        const endDate = new Date(startDate.getTime() + weeksToGenerate * 7 * 24 * 60 * 60 * 1000)
+        try {
+          const weeksToGenerate = data.generateDosesForWeeks
+          const startDate = new Date(data.prescription.startDate)
+          const endDate = new Date(startDate.getTime() + weeksToGenerate * 7 * 24 * 60 * 60 * 1000)
 
-        const generationResult = await medicationService.generateDosesForPrescription(
-          prescription.id,
-          {
+          const generationResult = await medicationService.generateDosesForPrescription(prescription.id, {
             from: startDate.toISOString(),
             to: endDate.toISOString(),
             timezone: data.schedule.timezone,
-          }
-        )
-        generatedDoses = generationResult.generatedDoses
+          })
+          generatedDoses = generationResult.generatedDoses
+        } catch (error) {
+          // Dose generation failure is not critical - log and continue
+          console.warn('Failed to generate doses, but prescription was created:', error)
+        }
       }
 
-      // 5. Schedule notifications
-      const notifications = await notificationService.scheduleSmartReminders(
-        generatedDoses,
-        { timezone: data.schedule?.timezone || 'UTC' } as UserSettings
-      )
+      // 5. Schedule notifications (non-critical, continue on error)
+      let notifications: any[] = []
+      try {
+        notifications = await notificationService.scheduleSmartReminders(generatedDoses, {
+          timezone: data.schedule?.timezone || 'UTC',
+        } as UserSettings)
+      } catch (error) {
+        console.warn('Failed to schedule notifications:', error)
+      }
 
-      // 6. Get initial analytics
-      const adherenceReport = await analyticsService.getComprehensiveAdherenceReport({
-        from: data.prescription.startDate,
-        to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Next week
-        includeInsights: true,
-      })
+      // 6. Get initial analytics (non-critical, continue on error)
+      let adherenceReport = null
+      let inventoryReport = null
+      let predictions = null
+      try {
+        adherenceReport = await analyticsService.getComprehensiveAdherenceReport({
+          from: data.prescription.startDate,
+          to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Next week
+          includeInsights: true,
+        })
+        inventoryReport = await analyticsService.getInventoryReport()
+        predictions = await analyticsService.getAdherencePrediction(prescription.id)
+      } catch (error) {
+        console.warn('Failed to get analytics, continuing without them:', error)
+      }
 
-      const inventoryReport = await analyticsService.getInventoryReport()
-
-      // 7. Get predictions
-      const predictions = await analyticsService.getAdherencePrediction(prescription.id)
-
-      // 8. Get notification preferences
-      const notificationPreferences = await notificationService.getNotificationPreferences()
+      // 7. Get notification preferences (non-critical)
+      let notificationPreferences = null
+      try {
+        notificationPreferences = await notificationService.getNotificationPreferences()
+      } catch (error) {
+        console.warn('Failed to get notification preferences:', error)
+      }
 
       return {
         setup: {
@@ -147,7 +214,62 @@ export class PillMindService {
         },
       }
     } catch (error) {
-      throw new Error(`Failed to setup complete medication workflow: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      // Rollback: Clean up created resources on error
+      // Note: This is best-effort cleanup, not a true transaction rollback
+      // Order matters: prescription -> care provider -> medication
+      try {
+        // 1. Delete prescription first (if created)
+        if (createdResources.prescriptionId) {
+          try {
+            const response = await fetch(`/api/prescriptions/${createdResources.prescriptionId}`, {
+              method: 'DELETE',
+            })
+            if (!response.ok) {
+              console.warn('Failed to cleanup prescription during rollback:', await response.text())
+            }
+          } catch (cleanupError) {
+            console.error('Error cleaning up prescription:', cleanupError)
+          }
+        }
+
+        // 2. Delete care provider (only if it was newly created, not if it was existing)
+        if (createdResources.careProviderId && !data.prescription.providerId) {
+          try {
+            const response = await fetch(`/api/care-providers/${createdResources.careProviderId}`, {
+              method: 'DELETE',
+            })
+            if (!response.ok) {
+              console.warn('Failed to cleanup care provider during rollback:', await response.text())
+            }
+          } catch (cleanupError) {
+            console.error('Error cleaning up care provider:', cleanupError)
+          }
+        }
+
+        // 3. Delete medication last (only if prescription was successfully deleted)
+        if (createdResources.medicationId) {
+          try {
+            const response = await fetch(`/api/medications/${createdResources.medicationId}`, {
+              method: 'DELETE',
+            })
+            if (!response.ok) {
+              const errorText = await response.text()
+              // Medication might have prescriptions, which is expected if prescription deletion failed
+              if (!errorText.includes('active prescriptions')) {
+                console.warn('Failed to cleanup medication during rollback:', errorText)
+              }
+            }
+          } catch (cleanupError) {
+            console.error('Error cleaning up medication:', cleanupError)
+          }
+        }
+      } catch (rollbackError) {
+        console.error('Error during rollback cleanup:', rollbackError)
+      }
+
+      throw new Error(
+        `Failed to setup complete medication workflow: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
     }
   }
 
@@ -172,7 +294,9 @@ export class PillMindService {
       const todayDoses = todayDosesResponse.ok ? await todayDosesResponse.json() : []
 
       // Get upcoming doses (next 24 hours)
-      const upcomingDosesResponse = await fetch(`/api/dose?from=${tomorrow.toISOString()}&to=${new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000).toISOString()}`)
+      const upcomingDosesResponse = await fetch(
+        `/api/dose?from=${tomorrow.toISOString()}&to=${new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000).toISOString()}`,
+      )
       const upcomingDoses = upcomingDosesResponse.ok ? await upcomingDosesResponse.json() : []
 
       // Identify missed doses
@@ -197,14 +321,14 @@ export class PillMindService {
 
       // Schedule low stock notifications
       const lowStockNotifications = await notificationService.scheduleLowStockNotifications(
-        lowStockAlerts.map(med => ({
+        lowStockAlerts.map((med) => ({
           id: med.id,
           name: med.name,
           inventory: {
             currentQty: med.inventory.currentQty,
             lowThreshold: med.inventory.lowThreshold || 0,
           },
-        }))
+        })),
       )
 
       return {
@@ -216,7 +340,9 @@ export class PillMindService {
         notifications: [...missedDoseNotifications, ...lowStockNotifications],
       }
     } catch (error) {
-      throw new Error(`Failed to process daily medication routine: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to process daily medication routine: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
     }
   }
 
@@ -229,7 +355,7 @@ export class PillMindService {
       updateInventory?: boolean
       rescheduleNext?: boolean
       notifyCareProvider?: boolean
-    }
+    },
   ): Promise<{
     doseLog: DoseLog
     inventoryUpdated?: any
@@ -272,7 +398,9 @@ export class PillMindService {
         careProviderNotified,
       }
     } catch (error) {
-      throw new Error(`Failed to take dose with smart features: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to take dose with smart features: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
     }
   }
 
@@ -283,7 +411,7 @@ export class PillMindService {
       respectSchedule?: boolean
       maxSnoozeHours?: number
       notifyOnReschedule?: boolean
-    }
+    },
   ): Promise<{
     doseLog: DoseLog
     nextReminderScheduled?: any
@@ -315,7 +443,9 @@ export class PillMindService {
         nextReminderScheduled,
       }
     } catch (error) {
-      throw new Error(`Failed to snooze dose with smart reschedule: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to snooze dose with smart reschedule: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
     }
   }
 
@@ -362,9 +492,7 @@ export class PillMindService {
         if (prescriptionsResponse.ok) {
           const prescriptions = await prescriptionsResponse.json()
           report.predictions = await Promise.all(
-            prescriptions.map((rx: Prescription) =>
-              analyticsService.getAdherencePrediction(rx.id)
-            )
+            prescriptions.map((rx: Prescription) => analyticsService.getAdherencePrediction(rx.id)),
           )
         }
       }
@@ -377,7 +505,9 @@ export class PillMindService {
 
       return report
     } catch (error) {
-      throw new Error(`Failed to generate comprehensive report: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to generate comprehensive report: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      )
     }
   }
 
@@ -453,7 +583,9 @@ export class PillMindService {
           })
           results.restocked.push(restocked)
         } catch (error) {
-          errors.push(`Failed to restock medication ${medicationId}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+          errors.push(
+            `Failed to restock medication ${medicationId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          )
         }
       }
     }
@@ -488,7 +620,7 @@ export class PillMindService {
     const insights: string[] = []
 
     if (report.adherence?.overall?.adherenceRate >= 95) {
-      insights.push('Excellent medication adherence! You\'re doing great with your medication routine.')
+      insights.push("Excellent medication adherence! You're doing great with your medication routine.")
     } else if (report.adherence?.overall?.adherenceRate >= 80) {
       insights.push('Good medication adherence with room for improvement.')
     } else {

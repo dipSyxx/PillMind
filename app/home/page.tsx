@@ -10,6 +10,7 @@ import {
   WeekNavigation,
   WeeklySummary,
 } from '@/components/home'
+import { AnalyticsPage } from '@/components/home/analytics-page'
 import { LogsPage } from '@/components/home/logs-page'
 import { MedsPage } from '@/components/home/meds-page'
 import { ProfileTab } from '@/components/home/profile-tab'
@@ -33,7 +34,7 @@ export default function HomePage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [isAddOpen, setIsAddOpen] = useState(false)
   const [snoozeFor, setSnoozeFor] = useState<null | DoseLog>(null)
-  const [activeTab, setActiveTab] = useState<'home' | 'meds' | 'logs' | 'profile'>('home')
+  const [activeTab, setActiveTab] = useState<'home' | 'meds' | 'logs' | 'analytics' | 'profile'>('home')
 
   // Get data from user store
   const { settings, medications, prescriptions, doseLogs, isLoading, isInitialized } = useUserData()
@@ -455,6 +456,10 @@ export default function HomePage() {
         <LogsPage timezone={userSettings.timezone} timeFormat={userSettings?.timeFormat || 'H24'} />
       )}
 
+      {activeTab === 'analytics' && (
+        <AnalyticsPage timezone={userSettings.timezone} timeFormat={userSettings?.timeFormat || 'H24'} />
+      )}
+
       {activeTab === 'profile' && (
         <ProfileTab timezone={userSettings.timezone} timeFormat={userSettings?.timeFormat || 'H24'} />
       )}
@@ -497,7 +502,9 @@ export default function HomePage() {
                       asNeeded: draft.asNeeded,
                       maxDailyDose: draft.maxDailyDose,
                       instructions: draft.instructions,
-                      startDate: new Date().toISOString(),
+                      startDate: draft.startDate || new Date().toISOString(),
+                      endDate: draft.endDate && draft.endDate.trim() !== '' ? draft.endDate : undefined,
+                      providerId: draft.providerId && draft.providerId.trim() !== '' ? draft.providerId : undefined,
                     },
                     schedule:
                       !draft.asNeeded && draft.daysOfWeek && draft.times && userSettings

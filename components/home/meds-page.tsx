@@ -173,6 +173,9 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
             asNeeded: draft.asNeeded,
             maxDailyDose: draft.maxDailyDose,
             instructions: draft.instructions,
+            providerId: draft.providerId || undefined,
+            startDate: draft.startDate || undefined,
+            endDate: draft.endDate || undefined,
           }),
         })
 
@@ -190,7 +193,9 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
             asNeeded: draft.asNeeded,
             maxDailyDose: draft.maxDailyDose,
             instructions: draft.instructions,
-            startDate: new Date().toISOString(),
+            providerId: draft.providerId && draft.providerId.trim() !== '' ? draft.providerId : undefined,
+            startDate: draft.startDate || new Date().toISOString(),
+            endDate: draft.endDate && draft.endDate.trim() !== '' ? draft.endDate : undefined,
           }),
         })
 
@@ -323,6 +328,9 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
       indication: prescription?.indication || undefined,
       instructions: prescription?.instructions || undefined,
       maxDailyDose: prescription?.maxDailyDose ? Number(prescription.maxDailyDose) : undefined,
+      providerId: prescription?.providerId || undefined,
+      startDate: prescription?.startDate ? prescription.startDate : undefined,
+      endDate: prescription?.endDate ? prescription.endDate : undefined,
       // Schedule data
       daysOfWeek: schedule?.daysOfWeek || ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
       times: schedule?.times || [],
@@ -398,6 +406,7 @@ export function MedsPage({ timezone, timeFormat }: MedsPageProps) {
           medication={medicationForDetails}
           prescriptions={prescriptionsByMedId.get(medicationForDetails.id) || []}
           timeFormat={timeFormat}
+          timezone={timezone}
           open={isDetailsOpen}
           onClose={() => {
             setIsDetailsOpen(false)

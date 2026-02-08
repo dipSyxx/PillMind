@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/prisma-client'
 import { getUserIdFromSession } from '@/lib/session'
 import { z } from 'zod'
+import {
+  deleteFutureDosesForPrescription,
+  deleteAllFutureDosesForPrescription,
+} from '@/lib/dose-cleanup'
+import { generateDosesForSchedule } from '@/lib/dose-generation'
 
 const prescriptionUpdateSchema = z.object({
   providerId: z.string().optional(),
@@ -11,11 +16,12 @@ const prescriptionUpdateSchema = z.object({
   instructions: z.string().optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
+  autoCreateSchedule: z.boolean().optional(), // Auto-create schedule when asNeeded changes from true to false
 })
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const userId = await getUserIdFromSession()
   if (!userId) {
@@ -23,8 +29,9 @@ export async function GET(
   }
 
   try {
+    const { id } = await params
     const prescription = await prisma.prescription.findFirst({
-      where: { id: params.id, userId },
+      where: { id, userId },
       include: {
         medication: {
           include: {
@@ -52,7 +59,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const userId = await getUserIdFromSession()
   if (!userId) {
@@ -60,12 +67,13 @@ export async function PUT(
   }
 
   try {
+    const { id } = await params
     const body = await request.json()
     const validatedData = prescriptionUpdateSchema.parse(body)
 
     // Check if prescription exists and belongs to user
     const existingPrescription = await prisma.prescription.findFirst({
-      where: { id: params.id, userId },
+      where: { id, userId },
     })
 
     if (!existingPrescription) {
@@ -83,8 +91,89 @@ export async function PUT(
       }
     }
 
+    const newEndDate = validatedData.endDate ? new Date(validatedData.endDate) : existingPrescription.endDate
+    const asNeededChanged = validatedData.asNeeded !== undefined && validatedData.asNeeded !== existingPrescription.asNeeded
+    const autoCreateSchedule = validatedData.autoCreateSchedule !== false // Default to true if not specified
+
+    // Cleanup doses if endDate changed and moved earlier
+    if (newEndDate && (!existingPrescription.endDate || newEndDate < existingPrescription.endDate)) {
+      await deleteFutureDosesForPrescription(id, newEndDate)
+    }
+
+    // If asNeeded changed from false to true, delete all schedules and future doses
+    if (asNeededChanged && validatedData.asNeeded === true && existingPrescription.asNeeded === false) {
+      // Delete all future SCHEDULED doses
+      await deleteAllFutureDosesForPrescription(id)
+
+      // Delete all schedules for this prescription
+      await prisma.schedule.deleteMany({
+        where: {
+          prescriptionId: id,
+        },
+      })
+    }
+
+    // If asNeeded changed from true to false, auto-create schedule if none exists
+    if (
+      asNeededChanged &&
+      validatedData.asNeeded === false &&
+      existingPrescription.asNeeded === true &&
+      existingPrescription.schedules.length === 0 &&
+      autoCreateSchedule
+    ) {
+      // Get user settings for timezone
+      const userSettings = await prisma.userSettings.findUnique({
+        where: { userId },
+      })
+
+      const userTimezone = userSettings?.timezone || 'UTC'
+
+      // Create default schedule
+      const defaultSchedule = await prisma.schedule.create({
+        data: {
+          prescriptionId: id,
+          timezone: userTimezone,
+          daysOfWeek: ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'],
+          times: ['08:00'],
+          doseQuantity: 1,
+          doseUnit: 'TAB',
+          startDate: existingPrescription.startDate,
+          endDate: existingPrescription.endDate,
+        },
+      })
+
+      // Generate doses for the next 4 weeks
+      const now = new Date()
+      const fourWeeksLater = new Date(now)
+      fourWeeksLater.setDate(fourWeeksLater.getDate() + 28)
+
+      try {
+        const { generateDosesForSchedule } = await import('@/lib/dose-generation')
+        
+        await generateDosesForSchedule({
+          scheduleId: defaultSchedule.id,
+          prescriptionId: id,
+          schedule: {
+            daysOfWeek: defaultSchedule.daysOfWeek as any,
+            times: defaultSchedule.times,
+            doseQuantity: defaultSchedule.doseQuantity?.toNumber() ?? null,
+            doseUnit: defaultSchedule.doseUnit as any,
+          },
+          from: now,
+          to: fourWeeksLater,
+          timezone: userTimezone,
+          prescriptionEndDate: existingPrescription.endDate,
+          scheduleStartDate: existingPrescription.startDate,
+          scheduleEndDate: existingPrescription.endDate,
+        })
+      } catch (error) {
+        console.error('Error generating doses for auto-created schedule:', error)
+        // Don't fail the request if dose generation fails
+      }
+    }
+
     const prescription = await prisma.prescription.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...validatedData,
         startDate: validatedData.startDate ? new Date(validatedData.startDate) : undefined,
@@ -96,7 +185,9 @@ export async function PUT(
             inventory: true,
           },
         },
-        schedules: true,
+        schedules: {
+          orderBy: { createdAt: 'asc' },
+        },
         provider: true,
       },
     })
@@ -113,7 +204,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const userId = await getUserIdFromSession()
   if (!userId) {
@@ -121,9 +212,10 @@ export async function DELETE(
   }
 
   try {
+    const { id } = await params
     // Check if prescription exists and belongs to user
     const existingPrescription = await prisma.prescription.findFirst({
-      where: { id: params.id, userId },
+      where: { id, userId },
     })
 
     if (!existingPrescription) {
@@ -131,7 +223,7 @@ export async function DELETE(
     }
 
     await prisma.prescription.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     return NextResponse.json({ message: 'Prescription deleted successfully' })
