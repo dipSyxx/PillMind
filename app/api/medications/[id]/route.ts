@@ -125,6 +125,22 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       )
     }
 
+    // Delete all inactive prescriptions before deleting the medication
+    // This is necessary because of the foreign key constraint (onDelete: Restrict)
+    const inactivePrescriptionIds = existingMedication.prescriptions
+      .filter((rx) => rx.endDate && new Date(rx.endDate) <= now)
+      .map((rx) => rx.id)
+
+    if (inactivePrescriptionIds.length > 0) {
+      await prisma.prescription.deleteMany({
+        where: {
+          id: { in: inactivePrescriptionIds },
+          userId, // Ensure we only delete prescriptions belonging to this user
+        },
+      })
+    }
+
+    // Now we can safely delete the medication
     await prisma.medication.delete({
       where: { id },
     })
