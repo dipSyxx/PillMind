@@ -33,7 +33,6 @@ import {
   Heart,
   Info,
   Key,
-  Loader2,
   Lock,
   LogOut,
   Mail,
@@ -44,7 +43,6 @@ import {
   SettingsIcon,
   Shield,
   Trash2,
-  Upload,
   User,
   X,
 } from 'lucide-react'
@@ -233,9 +231,6 @@ export default function ProfilePage() {
   const [notificationFilter, setNotificationFilter] = useState<'all' | 'EMAIL' | 'SMS' | 'PUSH'>('all')
   const [notificationStatusFilter, setNotificationStatusFilter] = useState<'all' | 'SENT' | 'FAILED' | 'PENDING'>('all')
 
-  // === Image Upload state ===
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [uploadingImage, setUploadingImage] = useState(false)
 
   // ---------- Guards ----------
   useEffect(() => {
@@ -1003,10 +998,10 @@ export default function ProfilePage() {
                         <div className="group p-4 bg-white border border-[#E2E8F0] rounded-[12px] hover:border-[#0EA8BC]/30 hover:shadow-sm transition-all duration-200">
                           <div className="flex items-center gap-4">
                             <div className="relative">
-                              {imagePreview || profile?.image ? (
+                              {profile?.image ? (
                                 <div className="w-12 h-12 rounded-[12px] overflow-hidden border-2 border-[#0EA8BC]/20 shadow-sm">
                                   <img
-                                    src={imagePreview || profile?.image || ''}
+                                    src={profile.image}
                                     alt={profile?.name || 'User'}
                                     className="w-full h-full object-cover"
                                   />
@@ -1023,91 +1018,8 @@ export default function ProfilePage() {
                             <div className="flex-1">
                               <p className="text-sm text-[#64748B]">Profile Picture</p>
                               <p className="font-medium text-[#0F172A]">
-                                {imagePreview || profile?.image ? 'Custom avatar' : 'Default avatar with initials'}
+                                {profile?.image ? 'Avatar from OAuth provider' : 'Default avatar with initials'}
                               </p>
-                            </div>
-                            <div className="flex flex-col gap-2">
-                              <label
-                                htmlFor="image-upload"
-                                className={cn(
-                                  'px-3 py-1.5 text-xs font-medium rounded-lg border cursor-pointer transition-colors',
-                                  uploadingImage
-                                    ? 'bg-[#E2E8F0] text-[#64748B] cursor-not-allowed'
-                                    : 'bg-white border-[#0EA8BC] text-[#0EA8BC] hover:bg-[#0EA8BC]/5',
-                                )}
-                              >
-                                {uploadingImage ? (
-                                  <span className="flex items-center gap-1">
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                    Uploading...
-                                  </span>
-                                ) : (
-                                  <span className="flex items-center gap-1">
-                                    <Upload className="w-3 h-3" />
-                                    Change
-                                  </span>
-                                )}
-                              </label>
-                              <input
-                                id="image-upload"
-                                type="file"
-                                accept="image/jpeg,image/jpg,image/png,image/webp"
-                                className="hidden"
-                                disabled={uploadingImage}
-                                onChange={async (e) => {
-                                  const file = e.target.files?.[0]
-                                  if (!file) return
-
-                                  // Validate file type
-                                  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-                                  if (!allowedTypes.includes(file.type)) {
-                                    toast.error('Invalid file type. Only JPEG, PNG, and WebP are allowed.')
-                                    return
-                                  }
-
-                                  // Validate file size (max 5MB)
-                                  const maxSize = 5 * 1024 * 1024
-                                  if (file.size > maxSize) {
-                                    toast.error('File size exceeds 5MB limit')
-                                    return
-                                  }
-
-                                  // Show preview
-                                  const reader = new FileReader()
-                                  reader.onloadend = () => {
-                                    setImagePreview(reader.result as string)
-                                  }
-                                  reader.readAsDataURL(file)
-
-                                  // Upload
-                                  setUploadingImage(true)
-                                  try {
-                                    const formData = new FormData()
-                                    formData.append('image', file)
-
-                                    const res = await fetch('/api/profile/user/upload-image', {
-                                      method: 'POST',
-                                      body: formData,
-                                    })
-
-                                    if (res.ok) {
-                                      const updatedUser = await res.json()
-                                      setProfile(updatedUser)
-                                      toast.success('Profile image updated successfully')
-                                      setImagePreview(null)
-                                    } else {
-                                      const error = await res.json()
-                                      toast.error(error.error || 'Failed to upload image')
-                                      setImagePreview(null)
-                                    }
-                                  } catch (err) {
-                                    toast.error('Failed to upload image')
-                                    setImagePreview(null)
-                                  } finally {
-                                    setUploadingImage(false)
-                                  }
-                                }}
-                              />
                             </div>
                           </div>
                         </div>
