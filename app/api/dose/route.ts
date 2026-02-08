@@ -1,8 +1,10 @@
 import { shouldBeMarkedAsMissed } from '@/lib/dose-utils'
+import { generateDosesForSchedule } from '@/lib/dose-generation'
 import { getUserIdFromSession } from '@/lib/session'
 import prisma from '@/prisma/prisma-client'
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { startOfDayInTz } from '@/lib/medication-utils'
 
 const doseLogSchema = z.object({
   prescriptionId: z.string().min(1),
@@ -27,6 +29,69 @@ export async function GET(request: NextRequest) {
     const to = searchParams.get('to')
     const prescriptionId = searchParams.get('prescriptionId')
     const status = searchParams.get('status')
+
+    // On-demand dose generation: when a date range is requested, ensure doses exist for that range
+    if (from && to) {
+      const fromDate = new Date(from)
+      const toDate = new Date(to)
+      const userSettings = await prisma.userSettings.findUnique({
+        where: { userId },
+      })
+      const userTimezone = userSettings?.timezone || 'UTC'
+
+      const prescriptionsWithSchedules = await prisma.prescription.findMany({
+        where: {
+          userId,
+          asNeeded: false,
+          OR: [
+            { endDate: null },
+            { endDate: { gt: new Date() } },
+          ],
+        },
+        include: {
+          schedules: {
+            where: {
+              OR: [
+                { endDate: null },
+                { endDate: { gt: new Date() } },
+              ],
+            },
+          },
+        },
+      })
+
+      for (const prescription of prescriptionsWithSchedules) {
+        for (const schedule of prescription.schedules) {
+          const scheduleTz = schedule.timezone || userTimezone
+          const prescriptionEnd = prescription.endDate
+            ? startOfDayInTz(prescription.endDate, scheduleTz)
+            : null
+          try {
+            await generateDosesForSchedule({
+              scheduleId: schedule.id,
+              prescriptionId: prescription.id,
+              schedule: {
+                daysOfWeek: schedule.daysOfWeek as any,
+                times: schedule.times,
+                doseQuantity: schedule.doseQuantity?.toNumber() ?? null,
+                doseUnit: schedule.doseUnit as any,
+              },
+              from: fromDate,
+              to: toDate,
+              timezone: scheduleTz,
+              prescriptionEndDate: prescription.endDate,
+              scheduleStartDate: schedule.startDate,
+              scheduleEndDate: schedule.endDate,
+            })
+          } catch (err) {
+            console.error(
+              `[dose] generateDosesForSchedule failed schedule=${schedule.id}:`,
+              err
+            )
+          }
+        }
+      }
+    }
 
     // Get user's prescriptions to filter dose logs
     const userPrescriptions = await prisma.prescription.findMany({
