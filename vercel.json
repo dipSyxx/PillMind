@@ -1,0 +1,20 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/mark-missed",
+      "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/cron/generate-doses",
+      "schedule": "10 0 * * *"
+    },
+    {
+      "path": "/api/cron/send-notifications",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/low-stock-alerts",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

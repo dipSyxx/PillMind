@@ -16,7 +16,7 @@ const schema = z.object({
   timezone: z.string().min(1), // e.g. "Europe/Oslo"
   timeFormat: z.enum(['H12', 'H24']).default('H24'),
   // Optional: allow the client to pass preferred default channels (fallback below)
-  defaultChannels: z.array(z.enum(['PUSH', 'EMAIL', 'SMS'])).optional(),
+  defaultChannels: z.array(z.enum(['PUSH', 'EMAIL'])).optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     // Decide default channels if client did not pass any:
     // We recommend at least EMAIL to receive reminders; PUSH can be enabled later (PWA/native).
     const channels =
-      defaultChannels && defaultChannels.length > 0 ? defaultChannels : (['EMAIL'] as Array<'PUSH' | 'EMAIL' | 'SMS'>)
+      defaultChannels && defaultChannels.length > 0 ? defaultChannels : (['EMAIL'] as Array<'PUSH' | 'EMAIL'>)
 
     // 6) Atomically create User + UserSettings and cleanup tokens
     // All statements either succeed or fail together.

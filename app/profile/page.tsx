@@ -1,5 +1,6 @@
 'use client'
 
+import { PushSubscribe } from '@/components/notifications/push-subscribe'
 import { Container } from '@/components/shared/container'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -52,7 +53,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 
 type TimeFormat = 'H12' | 'H24'
-type Channel = 'PUSH' | 'EMAIL' | 'SMS'
+type Channel = 'PUSH' | 'EMAIL'
 
 type UserSettings = {
   userId: string
@@ -228,7 +229,7 @@ export default function ProfilePage() {
     }>
   >([])
   const [notificationLogsLoading, setNotificationLogsLoading] = useState(true)
-  const [notificationFilter, setNotificationFilter] = useState<'all' | 'EMAIL' | 'SMS' | 'PUSH'>('all')
+  const [notificationFilter, setNotificationFilter] = useState<'all' | 'EMAIL' | 'PUSH'>('all')
   const [notificationStatusFilter, setNotificationStatusFilter] = useState<'all' | 'SENT' | 'FAILED' | 'PENDING'>('all')
 
 
@@ -769,7 +770,7 @@ export default function ProfilePage() {
 
   const ChannelToggle = ({ value }: { value: Channel }) => {
     const checked = settings?.defaultChannels.includes(value) ?? false
-    const label = value === 'EMAIL' ? 'Email' : value === 'PUSH' ? 'Push' : 'SMS'
+    const label = value === 'EMAIL' ? 'Email' : 'Push'
     const id = `channel-${value.toLowerCase()}`
 
     return (
@@ -2105,7 +2106,6 @@ export default function ProfilePage() {
                         <div className="flex flex-wrap gap-2">
                           <ChannelToggle value="EMAIL" />
                           <ChannelToggle value="PUSH" />
-                          <ChannelToggle value="SMS" />
                         </div>
                         <p className="mt-1 text-xs text-[#64748B]">
                           Used as fallback for reminders unless overridden per prescription.
@@ -2154,6 +2154,12 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
+                  {/* Push subscribe (when PUSH channel is enabled) */}
+                  <PushSubscribe
+                    pushEnabled={settings?.defaultChannels?.includes('PUSH') ?? false}
+                    className="flex flex-wrap items-center gap-2"
+                  />
+
                   {/* Filters */}
                   <div className="flex flex-wrap gap-3">
                     <Select value={notificationFilter} onValueChange={(v) => setNotificationFilter(v as any)}>
@@ -2163,7 +2169,6 @@ export default function ProfilePage() {
                       <SelectContent>
                         <SelectItem value="all">All Channels</SelectItem>
                         <SelectItem value="EMAIL">Email</SelectItem>
-                        <SelectItem value="SMS">SMS</SelectItem>
                         <SelectItem value="PUSH">Push</SelectItem>
                       </SelectContent>
                     </Select>

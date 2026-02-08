@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/prisma-client'
 import { getUserIdFromSession } from '@/lib/session'
+import { isCronAuthorized } from '@/lib/cron-auth'
 import {
   nowInTz,
   addDaysInTz,
+  startOfDayInTz,
 } from '@/lib/medication-utils'
 import { generateDosesForSchedule } from '@/lib/dose-generation'
 
 /**
- * Cron job to generate dose logs for the next horizon
- * Should run daily at 00:10 in each user's timezone
- *
- * Usage: POST /api/cron/generate-doses
- * Headers: Authorization: Bearer <token> (for testing)
+ * Cron job to generate dose logs. Run daily (e.g. 00:10).
+ * Auth: CRON_SECRET (Authorization: Bearer) or session for manual test.
  * Body: { horizonDays?: number } (optional, defaults to 14)
  */
 export async function POST(request: NextRequest) {
   try {
-    // For production, this should be called by a cron service
-    const userId = await getUserIdFromSession()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const isCron = isCronAuthorized(request)
+    if (!isCron) {
+      const userId = await getUserIdFromSession()
+      if (!userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
     }
 
     const body = await request.json().catch(() => ({}))
@@ -37,18 +38,16 @@ export async function POST(request: NextRequest) {
         settings: true,
         prescriptions: {
           where: {
-            asNeeded: false, // Only scheduled prescriptions
-            endDate: {
-              or: [
-                null,
-                { gt: new Date() } // Not expired
-              ]
-            }
+            asNeeded: false,
+            OR: [
+              { endDate: null },
+              { endDate: { gt: new Date() } }
+            ]
           },
           include: {
             schedules: {
               where: {
-                or: [
+                OR: [
                   { endDate: null },
                   { endDate: { gt: new Date() } }
                 ]
@@ -140,4 +139,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+/** Vercel Cron sends GET */
+export async function GET(request: NextRequest) {
+  return POST(request)
 }

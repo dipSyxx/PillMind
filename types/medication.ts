@@ -21,7 +21,7 @@ export type DoseStatus = 'SCHEDULED' | 'TAKEN' | 'SKIPPED' | 'MISSED'
 
 export type TimeFormat = 'H12' | 'H24'
 
-export type Channel = 'PUSH' | 'EMAIL' | 'SMS'
+export type Channel = 'PUSH' | 'EMAIL'
 
 export type UserSettings = {
   userId: string

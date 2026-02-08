@@ -123,6 +123,19 @@ Create a `.env.local` file in the project root and configure the following keys:
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Google Analytics 4 measurement ID for marketing insights. |
 | `SITE_URL` | Public site URL used in metadata and sitemap generation. |
 
+## Cron jobs
+Scheduled tasks live under `app/api/cron/`. They support two auth modes:
+
+1. **Vercel Cron (production)**  
+   Set `CRON_SECRET` in Vercel Environment Variables. Vercel sends `Authorization: Bearer <CRON_SECRET>` on each cron request. The routes accept **GET** (used by Vercel) and **POST** (for manual tests). Schedules are in `vercel.json`:
+   - `mark-missed` — daily 00:05 UTC  
+   - `generate-doses` — daily 00:10 UTC  
+   - `send-notifications` — every minute  
+   - `low-stock-alerts` — daily 09:00 UTC  
+
+2. **Manual / local**  
+   Call the endpoint while logged in (session cookie) or with `Authorization: Bearer <CRON_SECRET>` in the request. Use POST for a body (e.g. `generate-doses` with `{ "horizonDays": 14 }`).
+
 ## Getting started
 1. **Install dependencies** (Node.js 18+, pnpm recommended):
    ```bash

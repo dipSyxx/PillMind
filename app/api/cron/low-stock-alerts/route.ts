@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/prisma/prisma-client'
 import { getUserIdFromSession } from '@/lib/session'
+import { isCronAuthorized } from '@/lib/cron-auth'
+import { sendPushToUser } from '@/lib/notifications/send-push'
+import { sendLowStockEmail } from '@/lib/notifications/send-email'
 
 /**
- * Cron job to send low stock alerts
- * Should run daily at 09:00 in each user's timezone
- *
- * Usage: POST /api/cron/low-stock-alerts
- * Headers: Authorization: Bearer <token> (for testing)
+ * Cron job to send low stock alerts. Run daily (e.g. 09:00).
+ * Auth: CRON_SECRET (Authorization: Bearer) or session for manual test.
  */
 export async function POST(request: NextRequest) {
   try {
-    // For production, this should be called by a cron service
-    const userId = await getUserIdFromSession()
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const isCron = isCronAuthorized(request)
+    if (!isCron) {
+      const userId = await getUserIdFromSession()
+      if (!userId) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
     }
 
     // Get all users with their medications and inventory
@@ -72,52 +74,111 @@ export async function POST(request: NextRequest) {
 
         // Only send one alert per day per user
         if (!existingAlert) {
+          const metaPayload = {
+            type: 'low_stock_alert',
+            medications: lowStockMedications.map(med => ({
+              id: med.id,
+              name: med.name,
+              currentQty: med.inventory?.currentQty || 0,
+              lowThreshold: med.inventory?.lowThreshold || 0,
+              unit: med.inventory?.unit || 'TAB'
+            }))
+          }
+          const medicationNames = lowStockMedications.map(m => m.name).join(', ')
+
           for (const channel of userChannels) {
+            if (channel === 'SMS') continue
             try {
-              // Create notification log
-              const notificationLog = await prisma.notificationLog.create({
-                data: {
-                  userId: user.id,
-                  doseLogId: null, // Not related to a specific dose
-                  channel: channel as any,
-                  status: 'SENT',
-                  sentAt: new Date(),
-                  meta: {
-                    type: 'low_stock_alert',
+              if (channel === 'PUSH') {
+                const pushResult = await sendPushToUser(user.id, {
+                  title: 'Low stock alert',
+                  body: `${lowStockMedications.length} medication(s) low: ${medicationNames}`,
+                  url: '/home'
+                })
+                const status = pushResult.sent > 0 ? 'SENT' : 'FAILED'
+                const notificationLog = await prisma.notificationLog.create({
+                  data: {
+                    userId: user.id,
+                    doseLogId: null,
+                    channel: 'PUSH',
+                    status: status as any,
+                    sentAt: new Date(),
+                    meta: status === 'SENT' ? metaPayload : { ...metaPayload, reason: pushResult.sent === 0 && pushResult.removed === 0 ? 'no_subscription' : 'delivery_failed' }
+                  }
+                })
+                if (status === 'SENT') {
+                  totalAlerts++
+                  results.push({
+                    userId: user.id,
+                    userEmail: user.email,
+                    channel: 'PUSH',
+                    lowStockCount: lowStockMedications.length,
                     medications: lowStockMedications.map(med => ({
                       id: med.id,
                       name: med.name,
                       currentQty: med.inventory?.currentQty || 0,
-                      lowThreshold: med.inventory?.lowThreshold || 0,
-                      unit: med.inventory?.unit || 'TAB'
-                    }))
-                  }
+                      lowThreshold: med.inventory?.lowThreshold || 0
+                    })),
+                    notificationId: notificationLog.id
+                  })
                 }
-              })
+                continue
+              }
 
-              totalAlerts++
-
-              results.push({
-                userId: user.id,
-                userEmail: user.email,
-                channel,
-                lowStockCount: lowStockMedications.length,
-                medications: lowStockMedications.map(med => ({
-                  id: med.id,
-                  name: med.name,
-                  currentQty: med.inventory?.currentQty || 0,
-                  lowThreshold: med.inventory?.lowThreshold || 0
-                })),
-                notificationId: notificationLog.id
-              })
-
-              // Here you would integrate with actual notification services
-              console.log(`Low stock alert sent to ${user.email} for ${lowStockMedications.length} medications`)
-
+              if (channel === 'EMAIL') {
+                const email = user.email
+                if (!email) {
+                  await prisma.notificationLog.create({
+                    data: {
+                      userId: user.id,
+                      doseLogId: null,
+                      channel: 'EMAIL',
+                      status: 'FAILED',
+                      sentAt: new Date(),
+                      meta: { ...metaPayload, reason: 'no_email' }
+                    }
+                  })
+                  continue
+                }
+                const emailResult = await sendLowStockEmail(email, {
+                  medications: metaPayload.medications.map(m => ({
+                    name: m.name,
+                    currentQty: Number(m.currentQty),
+                    lowThreshold: Number(m.lowThreshold),
+                    unit: m.unit
+                  }))
+                })
+                const status = emailResult.ok ? 'SENT' : 'FAILED'
+                const notificationLog = await prisma.notificationLog.create({
+                  data: {
+                    userId: user.id,
+                    doseLogId: null,
+                    channel: 'EMAIL',
+                    status: status as any,
+                    sentAt: new Date(),
+                    meta: status === 'SENT' ? metaPayload : { ...metaPayload, error: emailResult.error }
+                  }
+                })
+                if (status === 'SENT') {
+                  totalAlerts++
+                  results.push({
+                    userId: user.id,
+                    userEmail: user.email,
+                    channel: 'EMAIL',
+                    lowStockCount: lowStockMedications.length,
+                    medications: lowStockMedications.map(med => ({
+                      id: med.id,
+                      name: med.name,
+                      currentQty: med.inventory?.currentQty || 0,
+                      lowThreshold: med.inventory?.lowThreshold || 0
+                    })),
+                    notificationId: notificationLog.id
+                  })
+                }
+                continue
+              }
             } catch (error) {
               console.error(`Failed to send low stock alert for user ${user.id}:`, error)
-
-              // Log failed notification
               await prisma.notificationLog.create({
                 data: {
                   userId: user.id,
@@ -151,4 +212,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+/** Vercel Cron sends GET */
+export async function GET(request: NextRequest) {
+  return POST(request)
 }

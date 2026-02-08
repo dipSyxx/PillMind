@@ -1,7 +1,7 @@
 import { DoseLog, UserSettings } from '@/types/medication'
 
 export interface NotificationPreferences {
-  channels: ('EMAIL' | 'SMS' | 'PUSH')[]
+  channels: ('EMAIL' | 'PUSH')[]
   timing: {
     reminderMinutes: number[]
     snoozeOptions: number[]
@@ -24,7 +24,7 @@ export interface NotificationPreferences {
 export interface NotificationTemplate {
   id: string
   type: 'REMINDER' | 'MISSED' | 'LOW_STOCK' | 'ADHERENCE_REPORT'
-  channel: 'EMAIL' | 'SMS' | 'PUSH'
+  channel: 'EMAIL' | 'PUSH'
   subject?: string
   message: string
   variables: string[]
@@ -34,7 +34,7 @@ export interface ScheduledNotification {
   id: string
   doseLogId: string
   scheduledFor: string
-  channel: 'EMAIL' | 'SMS' | 'PUSH'
+  channel: 'EMAIL' | 'PUSH'
   status: 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'CANCELLED'
   attempts: number
   lastAttempt?: string
@@ -314,7 +314,7 @@ export class NotificationService {
 
   private async sendNotification(notification: ScheduledNotification): Promise<void> {
     // Simulate sending notification
-    // In a real implementation, this would integrate with email/SMS/push services
+    // In a real implementation, this would integrate with email/push services
 
     const template = this.getNotificationTemplates().find(
       t => t.type === 'REMINDER' && t.channel === notification.channel
