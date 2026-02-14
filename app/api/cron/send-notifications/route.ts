@@ -4,12 +4,15 @@ import { getUserIdFromSession } from '@/lib/session'
 import { isCronAuthorized } from '@/lib/cron-auth'
 import { sendPushToUser } from '@/lib/notifications/send-push'
 import { sendReminderEmail } from '@/lib/notifications/send-email'
+import { generateDosesForSchedule } from '@/lib/dose-generation'
+import { startOfDayInTz } from '@/lib/medication-utils'
 import { format } from 'date-fns'
 
 /**
  * Cron job to send medication reminder notifications. Runs daily (e.g. 08:00 UTC).
- * Finds ALL scheduled doses for today that haven't been notified yet and sends
- * reminders via the user's configured channels (PUSH / EMAIL).
+ * 1. Generates today's DoseLog records (on-demand -- same as GET /api/dose).
+ * 2. Finds ALL scheduled doses for today that haven't been notified yet.
+ * 3. Sends reminders via the user's configured channels (PUSH / EMAIL).
  * Auth: set CRON_SECRET and send Authorization: Bearer <CRON_SECRET>, or call with session (manual test).
  */
 export async function POST(request: NextRequest) {
@@ -53,7 +56,59 @@ export async function POST(request: NextRequest) {
       const userTimezone = user.settings?.timezone || 'UTC'
       const userChannels = user.settings?.defaultChannels || ['EMAIL']
 
-      // Find all SCHEDULED doses for today that haven't been notified yet
+      // ── Step 1: ensure today's DoseLog records exist (on-demand generation) ──
+      try {
+        const prescriptionsWithSchedules = await prisma.prescription.findMany({
+          where: {
+            userId: user.id,
+            asNeeded: false,
+            OR: [
+              { endDate: null },
+              { endDate: { gt: now } },
+            ],
+          },
+          include: {
+            schedules: {
+              where: {
+                OR: [
+                  { endDate: null },
+                  { endDate: { gt: now } },
+                ],
+              },
+            },
+          },
+        })
+
+        for (const prescription of prescriptionsWithSchedules) {
+          for (const schedule of prescription.schedules) {
+            const scheduleTz = schedule.timezone || userTimezone
+            try {
+              await generateDosesForSchedule({
+                scheduleId: schedule.id,
+                prescriptionId: prescription.id,
+                schedule: {
+                  daysOfWeek: schedule.daysOfWeek as any,
+                  times: schedule.times,
+                  doseQuantity: schedule.doseQuantity?.toNumber() ?? null,
+                  doseUnit: schedule.doseUnit as any,
+                },
+                from: startOfDay,
+                to: endOfDay,
+                timezone: scheduleTz,
+                prescriptionEndDate: prescription.endDate,
+                scheduleStartDate: schedule.startDate,
+                scheduleEndDate: schedule.endDate,
+              })
+            } catch (err) {
+              console.error(`[send-notifications] generateDoses failed schedule=${schedule.id}:`, err)
+            }
+          }
+        }
+      } catch (err) {
+        console.error(`[send-notifications] failed to generate doses for user ${user.id}:`, err)
+      }
+
+      // ── Step 2: find all SCHEDULED doses for today that haven't been notified ──
       const dosesToNotify = await prisma.doseLog.findMany({
         where: {
           prescription: {
