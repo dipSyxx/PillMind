@@ -79,11 +79,14 @@ export async function POST(request: NextRequest) {
           },
         })
 
+        const totalSchedules = prescriptionsWithSchedules.reduce((n, p) => n + p.schedules.length, 0)
+        console.log(`[send-notifications] user ${user.id}: ${prescriptionsWithSchedules.length} active prescription(s), ${totalSchedules} schedule(s), tz=${userTimezone}`)
+
         for (const prescription of prescriptionsWithSchedules) {
           for (const schedule of prescription.schedules) {
             const scheduleTz = schedule.timezone || userTimezone
             try {
-              await generateDosesForSchedule({
+              const genResult = await generateDosesForSchedule({
                 scheduleId: schedule.id,
                 prescriptionId: prescription.id,
                 schedule: {
@@ -99,6 +102,7 @@ export async function POST(request: NextRequest) {
                 scheduleStartDate: schedule.startDate,
                 scheduleEndDate: schedule.endDate,
               })
+              console.log(`[send-notifications] schedule ${schedule.id}: days=${JSON.stringify(schedule.daysOfWeek)}, times=${JSON.stringify(schedule.times)}, generated=${genResult.generated}, skipped=${genResult.skipped}, requested=${genResult.requested}, errors=${JSON.stringify(genResult.errors)}`)
             } catch (err) {
               console.error(`[send-notifications] generateDoses failed schedule=${schedule.id}:`, err)
             }
