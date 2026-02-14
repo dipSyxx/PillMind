@@ -4,11 +4,12 @@ import { getUserIdFromSession } from '@/lib/session'
 import { isCronAuthorized } from '@/lib/cron-auth'
 import { sendPushToUser } from '@/lib/notifications/send-push'
 import { sendReminderEmail } from '@/lib/notifications/send-email'
-import { addMinutes } from '@/lib/medication-utils'
 import { format } from 'date-fns'
 
 /**
- * Cron job to send notifications. Run every minute.
+ * Cron job to send medication reminder notifications. Runs daily (e.g. 08:00 UTC).
+ * Finds ALL scheduled doses for today that haven't been notified yet and sends
+ * reminders via the user's configured channels (PUSH / EMAIL).
  * Auth: set CRON_SECRET and send Authorization: Bearer <CRON_SECRET>, or call with session (manual test).
  */
 export async function POST(request: NextRequest) {
@@ -22,7 +23,14 @@ export async function POST(request: NextRequest) {
     }
 
     const now = new Date()
-    const notificationWindow = 2 // minutes window
+
+    // Build a full-day window (UTC) so the daily cron catches every dose today
+    const startOfDay = new Date(now)
+    startOfDay.setUTCHours(0, 0, 0, 0)
+    const endOfDay = new Date(now)
+    endOfDay.setUTCHours(23, 59, 59, 999)
+
+    console.log('[send-notifications] cron fired', { now: now.toISOString(), startOfDay: startOfDay.toISOString(), endOfDay: endOfDay.toISOString() })
 
     // Get all users with their settings
     const users = await prisma.user.findMany({
@@ -36,6 +44,8 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    console.log(`[send-notifications] found ${users.length} user(s) with settings`)
+
     let totalSent = 0
     const results = []
 
@@ -43,7 +53,7 @@ export async function POST(request: NextRequest) {
       const userTimezone = user.settings?.timezone || 'UTC'
       const userChannels = user.settings?.defaultChannels || ['EMAIL']
 
-      // Find doses that need notifications (within the time window)
+      // Find all SCHEDULED doses for today that haven't been notified yet
       const dosesToNotify = await prisma.doseLog.findMany({
         where: {
           prescription: {
@@ -51,8 +61,8 @@ export async function POST(request: NextRequest) {
           },
           status: 'SCHEDULED',
           scheduledFor: {
-            gte: now,
-            lte: addMinutes(now, notificationWindow)
+            gte: startOfDay,
+            lte: endOfDay,
           }
         },
         include: {
@@ -68,6 +78,8 @@ export async function POST(request: NextRequest) {
           }
         }
       })
+
+      console.log(`[send-notifications] user ${user.id}: ${dosesToNotify.length} dose(s) scheduled today`)
 
       for (const dose of dosesToNotify) {
         // Check if notification was already sent
@@ -137,6 +149,7 @@ export async function POST(request: NextRequest) {
                   timezone: userTimezone,
                   name: user.name ?? undefined
                 })
+                console.log(`[send-notifications] email to ${email} for "${medicationName}":`, emailResult)
                 const status = emailResult.ok ? 'SENT' : 'FAILED'
                 const notificationLog = await prisma.notificationLog.create({
                   data: {

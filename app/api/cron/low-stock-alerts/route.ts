@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    console.log('[low-stock-alerts] cron fired', { now: new Date().toISOString() })
+
     // Get all users with their medications and inventory
     const users = await prisma.user.findMany({
       where: {
@@ -36,6 +38,8 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    console.log(`[low-stock-alerts] found ${users.length} user(s) with settings`)
+
     let totalAlerts = 0
     const results = []
 
@@ -52,10 +56,12 @@ export async function POST(request: NextRequest) {
         return currentQty <= lowThreshold
       })
 
+      console.log(`[low-stock-alerts] user ${user.id}: ${lowStockMedications.length} low-stock medication(s), channels: [${userChannels.join(', ')}]`)
+
       if (lowStockMedications.length > 0) {
         // Check if we already sent an alert today
         const today = new Date()
-        today.setHours(0, 0, 0, 0)
+        today.setUTCHours(0, 0, 0, 0)
 
         const existingAlert = await prisma.notificationLog.findFirst({
           where: {
@@ -148,6 +154,7 @@ export async function POST(request: NextRequest) {
                     unit: m.unit
                   }))
                 })
+                console.log(`[low-stock-alerts] email to ${email}:`, emailResult)
                 const status = emailResult.ok ? 'SENT' : 'FAILED'
                 const notificationLog = await prisma.notificationLog.create({
                   data: {
